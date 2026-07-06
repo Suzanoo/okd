@@ -4,7 +4,7 @@ import ThemeProvider from "./_providers/ThemeProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "KAMUi Construction Management",
+  title: "OKd",
   description: "Project control center",
 };
 

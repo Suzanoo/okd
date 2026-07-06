@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { ActivityRow, ProgressRow, ViewMode } from "@/types/report";
 
 import { KPICards } from "./_components/KPICards";
-// import { ProgressTable } from "./_components/ProgressTable";
+// import { ProgressTable } from "./_components/ProgressTable2";
 import { ReportControls } from "./_components/ReportControls";
 import { SCurveChart } from "./_components/SCurveChart";
 import {
@@ -18,7 +18,7 @@ import {
 import { calculateKpi } from "@/lib/report/calculateKpi";
 import { parseProgressCsv } from "@/lib/report/parseProgressCsv";
 
-import { ActivityTable } from "./_components/ActivityTable";
+import { ActivityTable } from "./_components/ProgressTable";
 import { calculateActivityProgress } from "@/lib/report/calculateActivityProgress";
 import { parseActivityCsv } from "@/lib/report/parseActivityCsv";
 
