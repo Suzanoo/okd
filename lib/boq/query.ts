@@ -38,6 +38,19 @@ export function filterByDescription(
 
 }
 
+type CsvCell = string | number | null | undefined;
+
+function rowsToCSV(header: string[], lines: CsvCell[][]): string {
+  const csvBody = [header, ...lines]
+    .map((row) =>
+      row.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","),
+    )
+    .join("\r\n");
+
+  // BOM ช่วยให้ Excel/Windows อ่านภาษาไทยถูกขึ้น
+  return "\uFEFF" + csvBody;
+}
+
 export function toCSV(rows: BoqRow[]): string {
   const header = [
     "WBS-1",
@@ -65,9 +78,41 @@ export function toCSV(rows: BoqRow[]): string {
     r.amount,
   ]);
 
-  return [header, ...lines]
-    .map((row) =>
-      row.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")
-    )
-    .join("\n");
+  return rowsToCSV(header, lines);
+}
+
+export type DescriptionSummaryCsvRow = {
+  description: string;
+  unit: string;
+  qty: number;
+  material: number;
+  labor: number;
+  amount: number;
+  sourceRows: number;
+};
+
+export function toDescriptionSummaryCSV(
+  rows: DescriptionSummaryCsvRow[],
+): string {
+  const header = [
+    "Description",
+    "Unit",
+    "Qty",
+    "Material",
+    "Labor",
+    "Amount",
+    "Source Rows",
+  ];
+
+  const lines = rows.map((r) => [
+    r.description,
+    r.unit,
+    r.qty,
+    r.material,
+    r.labor,
+    r.amount,
+    r.sourceRows,
+  ]);
+
+  return rowsToCSV(header, lines);
 }

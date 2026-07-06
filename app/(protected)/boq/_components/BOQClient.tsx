@@ -1,9 +1,8 @@
 "use client";
 
 import { APP_NAME } from "@/config/app.config";
-
 import { useEffect, useMemo, useState } from "react";
-import type { BoqBuilding, BoqRow } from "@/lib/boq/types";
+import type { BoqRow } from "@/lib/boq/types";
 import {
   fetchWorkbookBuffer,
   getValidSheetsFromBuffer,
@@ -11,31 +10,21 @@ import {
 } from "@/lib/boq/boqParse";
 import { filterRows, sumBy } from "@/lib/boq/boqTransform";
 
-import BuildingFilePicker from "./controls/BuildingFilePicker";
 import SheetPicker from "./controls/SheetPicker";
-
 import PieAmountCard from "./cards/PieAmountCard";
 import BarAmountCard from "./cards/BarAmountCard";
 import WBSSelect from "./controls/WBSSelect";
-
 import QuerySection from "./QuerySection";
 
-function boqPath(building: BoqBuilding) {
-  return `/boq/BOQ_${building}.xlsx`;
-}
+const BOQ_FILE_PATH = "/boq/example.xlsx";
 
 export default function BOQClient() {
-  const [building, setBuilding] = useState<BoqBuilding>("NKC1");
-
-  // workbook buffer + sheets
   const [buf, setBuf] = useState<ArrayBuffer | null>(null);
   const [validSheets, setValidSheets] = useState<string[]>([]);
-  const [selectedSheet, setSelectedSheet] = useState<string>("");
+  const [selectedSheet, setSelectedSheet] = useState("");
 
-  // parsed rows
   const [rows, setRows] = useState<BoqRow[]>([]);
 
-  // cascade selection (dropdown-driven)
   const [wbs1, setWbs1] = useState<string | null>(null);
   const [wbs2, setWbs2] = useState<string | null>(null);
   const [wbs3, setWbs3] = useState<string | null>(null);
@@ -44,25 +33,25 @@ export default function BOQClient() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // ===== Load workbook when building changes =====
+  function resetCascade() {
+    setWbs1(null);
+    setWbs2(null);
+    setWbs3(null);
+    setWbs4(null);
+  }
+
   useEffect(() => {
     async function loadWorkbook() {
       setIsLoading(true);
       setErrorMsg("");
-
       setBuf(null);
       setRows([]);
       setValidSheets([]);
       setSelectedSheet("");
-
-      // reset cascade
-      setWbs1(null);
-      setWbs2(null);
-      setWbs3(null);
-      setWbs4(null);
+      resetCascade();
 
       try {
-        const b = await fetchWorkbookBuffer(boqPath(building));
+        const b = await fetchWorkbookBuffer(BOQ_FILE_PATH);
         const sheets = await getValidSheetsFromBuffer(b);
 
         setBuf(b);
@@ -73,56 +62,49 @@ export default function BOQClient() {
           setErrorMsg("ไม่พบ sheet ที่มี columns ครบตามที่กำหนด");
         }
       } catch (e) {
-        setErrorMsg(e instanceof Error ? e.message : "Unknown error");
+        setErrorMsg(e instanceof Error ? e.message : "โหลดไฟล์ BOQ ไม่สำเร็จ");
       } finally {
         setIsLoading(false);
       }
     }
 
     loadWorkbook();
-  }, [building]);
+  }, []);
 
-  // ===== Parse rows when sheet changes =====
   useEffect(() => {
     if (!buf || !selectedSheet) return;
 
-    // ✅ snapshot (ทำให้ TS มั่นใจ + กัน race)
     const b = buf;
     const sheet = selectedSheet;
-
     let cancelled = false;
 
-    async function run() {
+    async function parseSheet() {
       setIsLoading(true);
       setErrorMsg("");
-
-      setWbs1(null);
-      setWbs2(null);
-      setWbs3(null);
-      setWbs4(null);
+      resetCascade();
 
       try {
         await new Promise<void>((r) => requestAnimationFrame(() => r()));
-        const r = await parseBoqRowsFromBuffer(b, sheet); // ✅ ใช้ snapshot
-        if (!cancelled) setRows(r);
+        const parsed = await parseBoqRowsFromBuffer(b, sheet);
+
+        if (!cancelled) setRows(parsed);
       } catch (e) {
         if (!cancelled) {
-          setErrorMsg(e instanceof Error ? e.message : "Parse error");
           setRows([]);
+          setErrorMsg(e instanceof Error ? e.message : "Parse error");
         }
       } finally {
         if (!cancelled) setIsLoading(false);
       }
     }
 
-    run();
+    parseSheet();
 
     return () => {
       cancelled = true;
     };
   }, [buf, selectedSheet]);
 
-  // ===== Derived rowsets =====
   const rowsWBS1 = useMemo(() => rows, [rows]);
   const rowsWBS2 = useMemo(() => filterRows(rows, { wbs1 }), [rows, wbs1]);
   const rowsWBS3 = useMemo(
@@ -138,7 +120,6 @@ export default function BOQClient() {
     [rows, wbs1, wbs2, wbs3, wbs4],
   );
 
-  // ===== Chart data (lazy rendering) =====
   const pieWBS1 = useMemo(() => sumBy(rowsWBS1, (r) => r.wbs1), [rowsWBS1]);
 
   const barWBS2 = useMemo(() => {
@@ -161,39 +142,38 @@ export default function BOQClient() {
     return sumBy(rowsDesc, (r) => r.description);
   }, [rowsDesc, wbs1, wbs2, wbs3, wbs4]);
 
-  // ===== Options for dropdowns =====
   const wbs1Options = useMemo(() => pieWBS1.map((d) => d.name), [pieWBS1]);
   const wbs2Options = useMemo(() => barWBS2.map((d) => d.name), [barWBS2]);
   const wbs3Options = useMemo(() => barWBS3.map((d) => d.name), [barWBS3]);
   const wbs4Options = useMemo(() => barWBS4.map((d) => d.name), [barWBS4]);
 
-  // ===== Cascading setters (dropdown-driven) =====
   const setWBS1 = (v: string | null) => {
     setWbs1(v);
     setWbs2(null);
     setWbs3(null);
     setWbs4(null);
   };
+
   const setWBS2 = (v: string | null) => {
     setWbs2(v);
     setWbs3(null);
     setWbs4(null);
   };
+
   const setWBS3 = (v: string | null) => {
     setWbs3(v);
     setWbs4(null);
   };
+
   const setWBS4 = (v: string | null) => {
     setWbs4(v);
   };
 
-  // ===== Accent colors (still ok to keep) =====
   const C_WBS2 = "hsl(217 91% 60%)";
   const C_WBS3 = "hsl(160 84% 39%)";
   const C_WBS4 = "hsl(262 83% 58%)";
   const C_DESC = "hsl(25 95% 53%)";
 
-  // ===== Local UI tokens (use theme vars) =====
   const cardBase =
     "rounded-3xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] shadow-[var(--shadow-card)]";
   const cardPad = "px-6 py-5";
@@ -201,21 +181,14 @@ export default function BOQClient() {
   const fg = "text-[color:var(--color-foreground)]";
 
   const pill =
-    "rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1 text-xs " +
-    "text-[color:var(--color-foreground)]";
-
-  const pillGhost =
-    "rounded-full border border-[color:var(--color-border)] bg-transparent px-3 py-1 text-xs " +
-    "text-[color:var(--color-foreground)]/80";
+    "rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1 text-xs text-[color:var(--color-foreground)]";
 
   const btnGhost =
-    "rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1 text-xs " +
-    "text-[color:var(--color-foreground)] transition hover:opacity-90";
+    "rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1 text-xs text-[color:var(--color-foreground)] transition hover:opacity-90";
 
   return (
     <div className="min-h-screen bg-[color:var(--color-background)]">
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6">
-        {/* ===== Header (theme-based) ===== */}
         <header className={`${cardBase} ${cardPad}`}>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -229,7 +202,7 @@ export default function BOQClient() {
             </div>
 
             <div className={`text-xs ${muted}`}>
-              Building: <span className={`font-medium ${fg}`}>{building}</span>
+              File: <span className={`font-medium ${fg}`}>example.xlsx</span>
               {selectedSheet ? (
                 <>
                   {" "}
@@ -241,26 +214,18 @@ export default function BOQClient() {
           </div>
         </header>
 
-        {/* ===== Source controls ===== */}
-        <div className="grid gap-4 lg:grid-cols-2">
-          <BuildingFilePicker building={building} onChange={setBuilding} />
-          <SheetPicker
-            sheets={validSheets}
-            value={selectedSheet}
-            onChange={setSelectedSheet}
-            disabled={isLoading || validSheets.length === 0}
-          />
-        </div>
+        <SheetPicker
+          sheets={validSheets}
+          value={selectedSheet}
+          onChange={setSelectedSheet}
+          disabled={isLoading || validSheets.length === 0}
+        />
 
-        {/* ===== Loading / Error (theme-based) ===== */}
         {isLoading ? (
-          <div
-            className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4 text-sm"
-            style={{ boxShadow: "var(--shadow-card)" }}
-          >
+          <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4 text-sm shadow-[var(--shadow-card)]">
             <span className={muted}>Loading BOQ… </span>
             <span className="font-mono text-[color:var(--color-foreground)]/90">
-              {boqPath(building)}
+              {BOQ_FILE_PATH}
             </span>
           </div>
         ) : null}
@@ -271,7 +236,6 @@ export default function BOQClient() {
           </div>
         ) : null}
 
-        {/* ===== Current filter (theme-based) ===== */}
         <section className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4 shadow-[var(--shadow-card)]">
           <div className={`text-xs ${muted}`}>Current filter</div>
 
@@ -283,30 +247,23 @@ export default function BOQClient() {
 
             <button
               type="button"
-              onClick={() => {
-                setWbs1(null);
-                setWbs2(null);
-                setWbs3(null);
-                setWbs4(null);
-              }}
+              onClick={resetCascade}
               className={`ml-auto ${btnGhost}`}
             >
               Clear all
             </button>
           </div>
 
-          {/* tiny status row (optional, helps UX) */}
           <div className={`mt-2 text-[11px] ${muted}`}>
             Tip: เลือก dropdown เพื่อ cascade → กราฟจะ render
             เฉพาะระดับที่เลือกแล้ว
           </div>
         </section>
 
-        {/* ===== Row 1 ===== */}
         <div className="grid gap-4 lg:grid-cols-2">
           <PieAmountCard
             title="WBS-1"
-            subtitle="Overview by WBS-1 (optional click)"
+            subtitle="Overview by WBS-1"
             data={pieWBS1}
             selected={wbs1}
             onSelect={(name) => setWBS1(name)}
@@ -336,7 +293,6 @@ export default function BOQClient() {
           />
         </div>
 
-        {/* ===== Row 2 ===== */}
         <div className="grid gap-4 lg:grid-cols-2">
           <BarAmountCard
             title="WBS-3"
@@ -383,11 +339,10 @@ export default function BOQClient() {
           />
         </div>
 
-        {/* ===== Row 3 (surface panel) ===== */}
         <section className="rounded-3xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] p-4 shadow-[var(--shadow-card)]">
           <BarAmountCard
             title="Description Amount"
-            subtitle="Final level (render only when WBS-1..4 selected)"
+            subtitle="Final level"
             data={barDesc}
             color={C_DESC}
             height={300}
@@ -406,7 +361,6 @@ export default function BOQClient() {
           />
         </section>
 
-        {/* ===== Query Section ===== */}
         <QuerySection rows={rows} />
       </div>
     </div>

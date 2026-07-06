@@ -2,13 +2,17 @@
 
 import { useMemo, useState, useCallback } from "react";
 import type { BoqRow } from "@/lib/boq/types";
-import { toCSV } from "@/lib/boq/query";
+import { toCSV, toDescriptionSummaryCSV } from "@/lib/boq/query";
 import { useThemeStore } from "@/lib/theme/store";
 
 import QueryTable from "./query/QueryTable";
 import { useBoqQuery } from "./query/useBoqQuery";
 
 import { DEFAULT_LIMIT, MAX_EXPORT_ROWS, PAGE_SIZE } from "@/config/boq.config";
+
+import QuerySummaryTable, {
+  type DescriptionSummaryRow,
+} from "./query/QuerySummaryTable";
 
 type Props = {
   /** BOQ rows ทั้งหมด (source of truth) */
@@ -28,6 +32,7 @@ type TableFilters = {
 };
 
 type QtyByUnit = { unit: string; qty: number };
+type ViewMode = "detail" | "summary";
 
 /** แปลง number ที่อาจเป็น null/undefined ให้ปลอดภัย */
 const safeNum = (v: number | null | undefined) =>
@@ -92,11 +97,15 @@ export default function QuerySection({ rows }: Props) {
     unit: [],
   });
 
+  const [viewMode, setViewMode] = useState<ViewMode>("detail");
+  const [summaryPage, setSummaryPage] = useState(1);
+
   /** helper: patch filters แล้ว reset page (ใช้กับ dropdown) */
   const patchFilters = useCallback(
     (patch: Partial<TableFilters>) => {
       setTf((prev) => ({ ...prev, ...patch }));
       setPage(1);
+      setSummaryPage(1);
     },
     [setPage],
   );
@@ -105,6 +114,7 @@ export default function QuerySection({ rows }: Props) {
   const resetFilters = useCallback(() => {
     setTf({ wbs1: [], wbs2: [], wbs3: [], wbs4: [], unit: [] });
     setPage(1);
+    setSummaryPage(1);
   }, [setPage]);
 
   // =========================
@@ -151,6 +161,50 @@ export default function QuerySection({ rows }: Props) {
     [filteredWorkingRows],
   );
 
+  const descriptionSummaryRows: DescriptionSummaryRow[] = useMemo(() => {
+    const m = new Map<string, DescriptionSummaryRow>();
+
+    for (const r of filteredWorkingRows) {
+      const description = (r.description ?? "").trim();
+      if (!description) continue;
+
+      const unit = normalizeUnit(r.unit);
+      const key = `${description}||${unit}`;
+
+      const prev = m.get(key);
+      if (!prev) {
+        m.set(key, {
+          _id: key,
+          description,
+          unit,
+          qty: safeNum(r.qty),
+          material: safeNum(r.material),
+          labor: safeNum(r.labor),
+          amount: safeNum(r.amount),
+          sourceRows: 1,
+        });
+      } else {
+        prev.qty += safeNum(r.qty);
+        prev.material += safeNum(r.material);
+        prev.labor += safeNum(r.labor);
+        prev.amount += safeNum(r.amount);
+        prev.sourceRows += 1;
+      }
+    }
+
+    return Array.from(m.values()).sort((a, b) => b.amount - a.amount);
+  }, [filteredWorkingRows]);
+
+  const summaryTotalPages = Math.max(
+    1,
+    Math.ceil(descriptionSummaryRows.length / PAGE_SIZE),
+  );
+
+  const summaryPageData = useMemo(() => {
+    const start = (summaryPage - 1) * PAGE_SIZE;
+    return descriptionSummaryRows.slice(start, start + PAGE_SIZE);
+  }, [descriptionSummaryRows, summaryPage]);
+
   // =========================
   // 4) Apply pending removals (apply เฉพาะใน filtered view)
   // =========================
@@ -173,28 +227,38 @@ export default function QuerySection({ rows }: Props) {
   // 5) Export (CSV / PDF)
   // =========================
   const onDownloadCSV = useCallback(() => {
-    const csv = toCSV(filteredWorkingRows.map(({ _id, ...rest }) => rest));
+    const csv =
+      viewMode === "detail"
+        ? toCSV(filteredWorkingRows.map(({ _id, ...rest }) => rest))
+        : toDescriptionSummaryCSV(descriptionSummaryRows);
+
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = "boq_query_result.csv";
+    a.download =
+      viewMode === "detail"
+        ? "boq_query_detail_result.csv"
+        : "boq_query_summary_by_description.csv";
     a.click();
 
     URL.revokeObjectURL(url);
-  }, [filteredWorkingRows]);
+  }, [descriptionSummaryRows, filteredWorkingRows, viewMode]);
 
   const [exporting, setExporting] = useState(false);
 
   const onExportPDF = useCallback(async () => {
     if (exporting) return;
 
-    const data = filteredWorkingRows;
+    const exportRowCount =
+      viewMode === "detail"
+        ? filteredWorkingRows.length
+        : descriptionSummaryRows.length;
 
-    if (data.length > MAX_EXPORT_ROWS) {
+    if (exportRowCount > MAX_EXPORT_ROWS) {
       alert(
-        `ข้อมูล ${data.length.toLocaleString()} แถว เยอะเกินไป\n` +
+        `ข้อมูล ${exportRowCount.toLocaleString()} แถว เยอะเกินไป\n` +
           `กรุณา filter ให้เหลือไม่เกิน ${MAX_EXPORT_ROWS.toLocaleString()} แถวก่อน export`,
       );
       return;
@@ -224,14 +288,12 @@ export default function QuerySection({ rows }: Props) {
       const pageHeight = doc.internal.pageSize.getHeight();
       const available = pageWidth - marginX * 2;
 
-      const w = { wbs: 42, unit: 40, qty: 48, money: 62 };
-      const fixed = w.wbs * 4 + w.unit + w.qty + w.money * 3;
-      const descW = Math.max(180, available - fixed);
-
       doc.setFont("Sarabun", "normal");
       doc.setFontSize(14);
       doc.text(
-        `BOQ Query Result (${data.length.toLocaleString()} rows)`,
+        viewMode === "detail"
+          ? `BOQ Query Detail Result (${filteredWorkingRows.length.toLocaleString()} rows)`
+          : `BOQ Summary by Description (${descriptionSummaryRows.length.toLocaleString()} rows)`,
         marginX,
         32,
       );
@@ -239,33 +301,67 @@ export default function QuerySection({ rows }: Props) {
       doc.setFontSize(9);
       doc.text(`Generated: ${new Date().toLocaleString()}`, marginX, 46);
 
-      const head = [
-        [
-          "WBS-1",
-          "WBS-2",
-          "WBS-3",
-          "WBS-4",
-          "Description",
-          "Unit",
-          "Qty",
-          "Material",
-          "Labor",
-          "Amount",
-        ],
-      ];
+      const head =
+        viewMode === "detail"
+          ? [
+              [
+                "WBS-1",
+                "WBS-2",
+                "WBS-3",
+                "WBS-4",
+                "Description",
+                "Unit",
+                "Qty",
+                "Material",
+                "Labor",
+                "Amount",
+              ],
+            ]
+          : [
+              [
+                "Description",
+                "Unit",
+                "Qty",
+                "Material",
+                "Labor",
+                "Amount",
+                "Source Rows",
+              ],
+            ];
 
-      const body = data.map((r) => [
-        r.wbs1 ?? "",
-        r.wbs2 ?? "",
-        r.wbs3 ?? "",
-        r.wbs4 ?? "",
-        r.description ?? "",
-        normalizeUnit(r.unit),
-        fmtNum(safeNum(r.qty)),
-        fmtNum(safeNum(r.material)),
-        fmtNum(safeNum(r.labor)),
-        fmtNum(safeNum(r.amount)),
-      ]);
+      const body =
+        viewMode === "detail"
+          ? filteredWorkingRows.map((r) => [
+              r.wbs1 ?? "",
+              r.wbs2 ?? "",
+              r.wbs3 ?? "",
+              r.wbs4 ?? "",
+              r.description ?? "",
+              normalizeUnit(r.unit),
+              fmtNum(safeNum(r.qty)),
+              fmtNum(safeNum(r.material)),
+              fmtNum(safeNum(r.labor)),
+              fmtNum(safeNum(r.amount)),
+            ])
+          : descriptionSummaryRows.map((r) => [
+              r.description,
+              r.unit,
+              fmtNum(r.qty),
+              fmtNum(r.material),
+              fmtNum(r.labor),
+              fmtNum(r.amount),
+              r.sourceRows.toLocaleString(),
+            ]);
+
+      const detailW = { wbs: 42, unit: 40, qty: 48, money: 62 };
+      const detailFixed =
+        detailW.wbs * 4 + detailW.unit + detailW.qty + detailW.money * 3;
+      const detailDescW = Math.max(180, available - detailFixed);
+
+      const summaryW = { unit: 48, qty: 70, money: 82, sourceRows: 62 };
+      const summaryFixed =
+        summaryW.unit + summaryW.qty + summaryW.money * 3 + summaryW.sourceRows;
+      const summaryDescW = Math.max(260, available - summaryFixed);
 
       autoTable(doc, {
         head,
@@ -290,18 +386,29 @@ export default function QuerySection({ rows }: Props) {
           textColor: [30, 30, 30],
         },
 
-        columnStyles: {
-          0: { cellWidth: w.wbs },
-          1: { cellWidth: w.wbs },
-          2: { cellWidth: w.wbs },
-          3: { cellWidth: w.wbs },
-          4: { cellWidth: descW, overflow: "ellipsize" },
-          5: { cellWidth: w.unit },
-          6: { halign: "right", cellWidth: w.qty },
-          7: { halign: "right", cellWidth: w.money },
-          8: { halign: "right", cellWidth: w.money },
-          9: { halign: "right", cellWidth: w.money },
-        },
+        columnStyles:
+          viewMode === "detail"
+            ? {
+                0: { cellWidth: detailW.wbs },
+                1: { cellWidth: detailW.wbs },
+                2: { cellWidth: detailW.wbs },
+                3: { cellWidth: detailW.wbs },
+                4: { cellWidth: detailDescW, overflow: "ellipsize" },
+                5: { cellWidth: detailW.unit },
+                6: { halign: "right", cellWidth: detailW.qty },
+                7: { halign: "right", cellWidth: detailW.money },
+                8: { halign: "right", cellWidth: detailW.money },
+                9: { halign: "right", cellWidth: detailW.money },
+              }
+            : {
+                0: { cellWidth: summaryDescW, overflow: "ellipsize" },
+                1: { cellWidth: summaryW.unit },
+                2: { halign: "right", cellWidth: summaryW.qty },
+                3: { halign: "right", cellWidth: summaryW.money },
+                4: { halign: "right", cellWidth: summaryW.money },
+                5: { halign: "right", cellWidth: summaryW.money },
+                6: { halign: "right", cellWidth: summaryW.sourceRows },
+              },
 
         didDrawPage: () => {
           const pageNo = doc.getNumberOfPages();
@@ -312,25 +419,60 @@ export default function QuerySection({ rows }: Props) {
         },
       });
 
-      const sum = data.reduce((acc, r) => acc + safeNum(r.amount), 0);
-      const qtyUnits = sumByUnit(data);
-
       const last = doc as unknown as { lastAutoTable?: { finalY?: number } };
       const y = (last.lastAutoTable?.finalY ?? pageHeight - 80) + 18;
 
       doc.setFontSize(10);
-      doc.text(`Sum Amount: ${fmtNum(sum)}`, marginX, y);
 
-      const qtyText = qtyUnits
-        .map((x) => `${fmtNum(x.qty)} ${x.unit}`)
-        .join(" | ");
-      doc.text(`Sum Qty (by Unit): ${qtyText || "-"}`, marginX, y + 14);
+      if (viewMode === "detail") {
+        const sum = filteredWorkingRows.reduce(
+          (acc, r) => acc + safeNum(r.amount),
+          0,
+        );
+        const qtyUnits = sumByUnit(filteredWorkingRows);
 
-      doc.save("boq_query_result.pdf");
+        doc.text(`Sum Amount: ${fmtNum(sum)}`, marginX, y);
+
+        const qtyText = qtyUnits
+          .map((x) => `${fmtNum(x.qty)} ${x.unit}`)
+          .join(" | ");
+        doc.text(`Sum Qty (by Unit): ${qtyText || "-"}`, marginX, y + 14);
+      } else {
+        const sumQty = descriptionSummaryRows.reduce((a, r) => a + r.qty, 0);
+        const sumMaterial = descriptionSummaryRows.reduce(
+          (a, r) => a + r.material,
+          0,
+        );
+        const sumLabor = descriptionSummaryRows.reduce(
+          (a, r) => a + r.labor,
+          0,
+        );
+        const sumAmount = descriptionSummaryRows.reduce(
+          (a, r) => a + r.amount,
+          0,
+        );
+
+        doc.text(
+          `Unique descriptions: ${descriptionSummaryRows.length.toLocaleString()}`,
+          marginX,
+          y,
+        );
+        doc.text(
+          `Sum Qty: ${fmtNum(sumQty)} | Material: ${fmtNum(sumMaterial)} | Labor: ${fmtNum(sumLabor)} | Amount: ${fmtNum(sumAmount)}`,
+          marginX,
+          y + 14,
+        );
+      }
+
+      doc.save(
+        viewMode === "detail"
+          ? "boq_query_detail_result.pdf"
+          : "boq_query_summary_by_description.pdf",
+      );
     } finally {
       setExporting(false);
     }
-  }, [exporting, filteredWorkingRows]);
+  }, [descriptionSummaryRows, exporting, filteredWorkingRows, viewMode]);
 
   // =========================
   // 6) Filter options (for dropdowns)
@@ -479,6 +621,39 @@ export default function QuerySection({ rows }: Props) {
         <button type="button" onClick={onSearch} className={btnPrimary}>
           Search
         </button>
+
+        <div className="flex overflow-hidden rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)]">
+          <button
+            type="button"
+            onClick={() => {
+              setViewMode("detail");
+              setPage(1);
+            }}
+            className={
+              "px-3 py-1.5 text-xs transition " +
+              (viewMode === "detail"
+                ? "bg-[color:var(--color-accent)] text-white"
+                : "text-[color:var(--color-foreground)]")
+            }
+          >
+            Detail by WBS
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setViewMode("summary");
+              setSummaryPage(1);
+            }}
+            className={
+              "px-3 py-1.5 text-xs transition " +
+              (viewMode === "summary"
+                ? "bg-[color:var(--color-accent)] text-white"
+                : "text-[color:var(--color-foreground)]")
+            }
+          >
+            Summary by Description
+          </button>
+        </div>
       </div>
 
       {error ? (
@@ -492,11 +667,28 @@ export default function QuerySection({ rows }: Props) {
         <>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className={`text-sm ${muted}`}>
-              พบ{" "}
-              <span className={`${fg} font-medium`}>
-                {filteredWorkingRows.length.toLocaleString()}
-              </span>{" "}
-              รายการ
+              {viewMode === "detail" ? (
+                <>
+                  พบ{" "}
+                  <span className={`${fg} font-medium`}>
+                    {filteredWorkingRows.length.toLocaleString()}
+                  </span>{" "}
+                  รายการ
+                </>
+              ) : (
+                <>
+                  สรุป{" "}
+                  <span className={`${fg} font-medium`}>
+                    {descriptionSummaryRows.length.toLocaleString()}
+                  </span>{" "}
+                  descriptions จาก{" "}
+                  <span className={`${fg} font-medium`}>
+                    {filteredWorkingRows.length.toLocaleString()}
+                  </span>{" "}
+                  รายการ
+                </>
+              )}
+
               {pendingCountInFiltered > 0 ? (
                 <>
                   {" "}
@@ -548,39 +740,62 @@ export default function QuerySection({ rows }: Props) {
             </div>
           </div>
 
-          <QueryTable
-            pageData={pageData}
-            qtyByUnit={qtyByUnit}
-            sumAmount={sumAmount}
-            page={page}
-            totalPages={totalPages}
-            setPage={setPage}
-            pendingRemoveIds={pendingRemoveIds}
-            togglePending={togglePending}
-            keywords={keywords}
-            tf={tf}
-            patchFilters={patchFilters}
-            wbs1Options={wbs1Options}
-            wbs2Options={wbs2Options}
-            wbs3Options={wbs3Options}
-            wbs4Options={wbs4Options}
-            unitOptions={unitOptions}
-            normalizeUnit={normalizeUnit}
-            safeNum={safeNum}
-            fmtInt={fmtInt}
-            fmtNum={fmtNum}
-            tableWrap={tableWrap}
-            thead={thead}
-            th={th}
-            td={td}
-            tdNum={tdNum}
-            rowBase={rowBase}
-            muted={muted}
-            fg={fg}
-            markWrap={markWrap}
-            pendingRowCls={pendingRowCls}
-            btnGhost={btnGhost}
-          />
+          {viewMode === "detail" ? (
+            <QueryTable
+              pageData={pageData}
+              qtyByUnit={qtyByUnit}
+              sumAmount={sumAmount}
+              page={page}
+              totalPages={totalPages}
+              setPage={setPage}
+              pendingRemoveIds={pendingRemoveIds}
+              togglePending={togglePending}
+              keywords={keywords}
+              tf={tf}
+              patchFilters={patchFilters}
+              wbs1Options={wbs1Options}
+              wbs2Options={wbs2Options}
+              wbs3Options={wbs3Options}
+              wbs4Options={wbs4Options}
+              unitOptions={unitOptions}
+              normalizeUnit={normalizeUnit}
+              safeNum={safeNum}
+              fmtInt={fmtInt}
+              fmtNum={fmtNum}
+              tableWrap={tableWrap}
+              thead={thead}
+              th={th}
+              td={td}
+              tdNum={tdNum}
+              rowBase={rowBase}
+              muted={muted}
+              fg={fg}
+              markWrap={markWrap}
+              pendingRowCls={pendingRowCls}
+              btnGhost={btnGhost}
+            />
+          ) : (
+            <QuerySummaryTable
+              pageData={summaryPageData}
+              summaryRows={descriptionSummaryRows}
+              page={summaryPage}
+              totalPages={summaryTotalPages}
+              setPage={setSummaryPage}
+              keywords={keywords}
+              fmtInt={fmtInt}
+              fmtNum={fmtNum}
+              tableWrap={tableWrap}
+              thead={thead}
+              th={th}
+              td={td}
+              tdNum={tdNum}
+              rowBase={rowBase}
+              muted={muted}
+              fg={fg}
+              markWrap={markWrap}
+              btnGhost={btnGhost}
+            />
+          )}
         </>
       ) : (
         <div className={emptyBox}>ยังไม่มีผลลัพธ์</div>
