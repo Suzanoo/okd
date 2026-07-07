@@ -5,30 +5,60 @@ import { useEffect, useMemo, useState } from "react";
 import type { ActivityRow, ProgressRow, ViewMode } from "@/types/report";
 
 import { KPICards } from "./_components/KPICards";
-// import { ProgressTable } from "./_components/ProgressTable2";
 import { ReportControls } from "./_components/ReportControls";
 import { SCurveChart } from "./_components/SCurveChart";
+import { ActivityTable } from "./_components/ProgressTable";
+
 import {
   buildChartRows,
-  // buildTableRows,
   getBaseRows,
   getCutoffOptions,
 } from "@/lib/report/aggregateProgress";
-
 import { calculateKpi } from "@/lib/report/calculateKpi";
-import { parseProgressCsv } from "@/lib/report/parseProgressCsv";
-
-import { ActivityTable } from "./_components/ProgressTable";
 import { calculateActivityProgress } from "@/lib/report/calculateActivityProgress";
-import { parseActivityCsv } from "@/lib/report/parseActivityCsv";
+import { parseReportWorkbook } from "@/lib/report/parseReportWorkbook";
 
 export default function ReportPage() {
   const [rows, setRows] = useState<ProgressRow[]>([]);
+  const [activityRows, setActivityRows] = useState<ActivityRow[]>([]);
   const [mode, setMode] = useState<ViewMode>("weekly");
   const [cutoffDate, setCutoffDate] = useState("");
+  const [workbookName, setWorkbookName] = useState("example_progress.xlsx");
+
+  function applyWorkbookData(
+    progressRows: ProgressRow[],
+    nextActivityRows: ActivityRow[],
+    name: string,
+  ) {
+    setRows(progressRows);
+    setActivityRows(nextActivityRows);
+    setWorkbookName(name);
+    setCutoffDate(progressRows.at(-1)?.week_start ?? "");
+  }
+
+  useEffect(() => {
+    fetch("/data/example_progress.xlsx")
+      .then((res) => res.arrayBuffer())
+      .then((buffer) => {
+        const result = parseReportWorkbook(buffer);
+        applyWorkbookData(
+          result.progressRows,
+          result.activityRows,
+          "example_progress.xlsx",
+        );
+      })
+      .catch((error) => {
+        console.error("Failed to load example_progress.xlsx", error);
+      });
+  }, []);
+
+  const handleWorkbookUpload = async (file: File) => {
+    const buffer = await file.arrayBuffer();
+    const result = parseReportWorkbook(buffer);
+    applyWorkbookData(result.progressRows, result.activityRows, file.name);
+  };
 
   const options = useMemo(() => getCutoffOptions(rows, mode), [rows, mode]);
-
   const baseRows = useMemo(() => getBaseRows(rows, mode), [rows, mode]);
 
   const cutoffRow = useMemo(
@@ -41,46 +71,12 @@ export default function ReportPage() {
     [rows, mode, cutoffDate],
   );
 
-  // const tableRows = useMemo(
-  //   () => buildTableRows(rows, mode, cutoffDate),
-  //   [rows, mode, cutoffDate],
-  // );
+  const kpi = useMemo(() => calculateKpi(cutoffRow), [cutoffRow]);
 
-  // useEffect(() => {
-  //   console.log("mode =", mode);
-  //   console.log("cutoff =", cutoffDate);
-  // }, [mode, cutoffDate]);
-
-  // useEffect(() => {
-  //   console.log("cutoffRow =", cutoffRow);
-  // }, [cutoffRow]);
-
-  const [activityRows, setActivityRows] = useState<ActivityRow[]>([]);
-
-  useEffect(() => {
-    fetch("/data/progress.csv")
-      .then((res) => res.text())
-      .then((text) => {
-        const parsed = parseProgressCsv(text);
-        setRows(parsed);
-        setCutoffDate(parsed.at(-1)?.week_start ?? "");
-      })
-
-      .catch((error) => {
-        console.error("Failed to load progress.csv", error);
-      });
-  }, []);
-
-  useEffect(() => {
-    fetch("/data/progress_table.csv")
-      .then((res) => res.text())
-      .then((text) => {
-        setActivityRows(parseActivityCsv(text));
-      })
-      .catch((error) => {
-        console.error("Failed to load progress_table.csv", error);
-      });
-  }, []);
+  const activityTableRows = useMemo(
+    () => calculateActivityProgress(activityRows, cutoffDate),
+    [activityRows, cutoffDate],
+  );
 
   const handleModeChange = (nextMode: ViewMode) => {
     setMode(nextMode);
@@ -88,13 +84,6 @@ export default function ReportPage() {
     const nextRows = getBaseRows(rows, nextMode);
     setCutoffDate(nextRows.at(-1)?.week_start ?? "");
   };
-
-  const kpi = useMemo(() => calculateKpi(cutoffRow), [cutoffRow]);
-
-  const activityTableRows = useMemo(
-    () => calculateActivityProgress(activityRows, cutoffDate),
-    [activityRows, cutoffDate],
-  );
 
   return (
     <main className="min-h-screen bg-background px-6 py-10 text-foreground">
@@ -115,15 +104,14 @@ export default function ReportPage() {
             cutoffDate={cutoffDate}
             setCutoffDate={setCutoffDate}
             options={options}
+            workbookName={workbookName}
+            onWorkbookUpload={handleWorkbookUpload}
           />
         </div>
 
         <KPICards kpi={kpi} />
-
         <SCurveChart data={chartRows} />
         <ActivityTable data={activityTableRows} />
-
-        {/* <ProgressTable data={tableRows} /> */}
       </div>
     </main>
   );
