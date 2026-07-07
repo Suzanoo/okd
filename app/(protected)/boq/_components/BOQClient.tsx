@@ -1,7 +1,7 @@
 "use client";
 
 import { APP_NAME } from "@/config/app.config";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { BoqRow } from "@/lib/boq/types";
 import {
   fetchWorkbookBuffer,
@@ -10,15 +10,22 @@ import {
 } from "@/lib/boq/boqParse";
 import { filterRows, sumBy } from "@/lib/boq/boqTransform";
 
+import BoqSourcePicker from "./controls/BoqSourcePicker";
 import SheetPicker from "./controls/SheetPicker";
 import PieAmountCard from "./cards/PieAmountCard";
 import BarAmountCard from "./cards/BarAmountCard";
 import WBSSelect from "./controls/WBSSelect";
 import QuerySection from "./QuerySection";
 
-const BOQ_FILE_PATH = "/boq/example.xlsx";
+const DEFAULT_BOQ_PATH = "/boq/example_boq.xlsx";
+const DEFAULT_BOQ_NAME = "example_boq.xlsx";
+
+type SourceType = "default" | "upload";
 
 export default function BOQClient() {
+  const [sourceType, setSourceType] = useState<SourceType>("default");
+  const [sourceName, setSourceName] = useState(DEFAULT_BOQ_NAME);
+
   const [buf, setBuf] = useState<ArrayBuffer | null>(null);
   const [validSheets, setValidSheets] = useState<string[]>([]);
   const [selectedSheet, setSelectedSheet] = useState("");
@@ -33,43 +40,74 @@ export default function BOQClient() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  function resetCascade() {
+  const resetCascade = useCallback(() => {
     setWbs1(null);
     setWbs2(null);
     setWbs3(null);
     setWbs4(null);
-  }
+  }, []);
 
-  useEffect(() => {
-    async function loadWorkbook() {
+  const resetWorkbookState = useCallback(() => {
+    setBuf(null);
+    setRows([]);
+    setValidSheets([]);
+    setSelectedSheet("");
+    resetCascade();
+  }, [resetCascade]);
+
+  const applyWorkbookBuffer = useCallback(async (b: ArrayBuffer) => {
+    const sheets = await getValidSheetsFromBuffer(b);
+
+    setBuf(b);
+    setValidSheets(sheets);
+    setSelectedSheet(sheets[0] ?? "");
+
+    if (sheets.length === 0) {
+      setErrorMsg("ไม่พบ sheet ที่มี columns ครบตามที่กำหนด");
+    }
+  }, []);
+
+  const loadDefaultWorkbook = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMsg("");
+    setSourceType("default");
+    setSourceName(DEFAULT_BOQ_NAME);
+    resetWorkbookState();
+
+    try {
+      const b = await fetchWorkbookBuffer(DEFAULT_BOQ_PATH);
+      await applyWorkbookBuffer(b);
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : "โหลดไฟล์ BOQ ไม่สำเร็จ");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [applyWorkbookBuffer, resetWorkbookState]);
+
+  const loadUploadedWorkbook = useCallback(
+    async (file: File) => {
       setIsLoading(true);
       setErrorMsg("");
-      setBuf(null);
-      setRows([]);
-      setValidSheets([]);
-      setSelectedSheet("");
-      resetCascade();
+      setSourceType("upload");
+      setSourceName(file.name);
+      resetWorkbookState();
 
       try {
-        const b = await fetchWorkbookBuffer(BOQ_FILE_PATH);
-        const sheets = await getValidSheetsFromBuffer(b);
-
-        setBuf(b);
-        setValidSheets(sheets);
-        setSelectedSheet(sheets[0] ?? "");
-
-        if (sheets.length === 0) {
-          setErrorMsg("ไม่พบ sheet ที่มี columns ครบตามที่กำหนด");
-        }
+        const b = await file.arrayBuffer();
+        await applyWorkbookBuffer(b);
       } catch (e) {
-        setErrorMsg(e instanceof Error ? e.message : "โหลดไฟล์ BOQ ไม่สำเร็จ");
+        setErrorMsg(e instanceof Error ? e.message : "อ่านไฟล์ BOQ ไม่สำเร็จ");
       } finally {
         setIsLoading(false);
       }
-    }
+    },
+    [applyWorkbookBuffer, resetWorkbookState],
+  );
 
-    loadWorkbook();
-  }, []);
+  // Load default file once when BOQ page opens.
+  useEffect(() => {
+    loadDefaultWorkbook();
+  }, [loadDefaultWorkbook]);
 
   useEffect(() => {
     if (!buf || !selectedSheet) return;
@@ -103,7 +141,7 @@ export default function BOQClient() {
     return () => {
       cancelled = true;
     };
-  }, [buf, selectedSheet]);
+  }, [buf, selectedSheet, resetCascade]);
 
   const rowsWBS1 = useMemo(() => rows, [rows]);
   const rowsWBS2 = useMemo(() => filterRows(rows, { wbs1 }), [rows, wbs1]);
@@ -202,7 +240,7 @@ export default function BOQClient() {
             </div>
 
             <div className={`text-xs ${muted}`}>
-              File: <span className={`font-medium ${fg}`}>example.xlsx</span>
+              Source: <span className={`font-medium ${fg}`}>{sourceName}</span>
               {selectedSheet ? (
                 <>
                   {" "}
@@ -213,6 +251,15 @@ export default function BOQClient() {
             </div>
           </div>
         </header>
+
+        <BoqSourcePicker
+          sourceType={sourceType}
+          sourceName={sourceName}
+          defaultName={DEFAULT_BOQ_NAME}
+          isLoading={isLoading}
+          onUseDefault={loadDefaultWorkbook}
+          onUpload={loadUploadedWorkbook}
+        />
 
         <SheetPicker
           sheets={validSheets}
@@ -225,7 +272,7 @@ export default function BOQClient() {
           <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4 text-sm shadow-[var(--shadow-card)]">
             <span className={muted}>Loading BOQ… </span>
             <span className="font-mono text-[color:var(--color-foreground)]/90">
-              {BOQ_FILE_PATH}
+              {sourceType === "default" ? DEFAULT_BOQ_PATH : sourceName}
             </span>
           </div>
         ) : null}
