@@ -11,7 +11,11 @@ import { useBoqQuery } from "./query/useBoqQuery";
 import { DEFAULT_LIMIT, MAX_EXPORT_ROWS, PAGE_SIZE } from "@/config/boq.config";
 
 import QuerySummaryTable, {
+  defaultSummarySortOrderFor,
+  sortDescriptionSummaryRows,
   type DescriptionSummaryRow,
+  type SummarySortKey,
+  type SummarySortState,
 } from "./query/QuerySummaryTable";
 
 type Props = {
@@ -99,6 +103,10 @@ export default function QuerySection({ rows }: Props) {
 
   const [viewMode, setViewMode] = useState<ViewMode>("detail");
   const [summaryPage, setSummaryPage] = useState(1);
+  const [summarySort, setSummarySort] = useState<SummarySortState>({
+    key: "amount",
+    order: "desc",
+  });
 
   /** helper: patch filters แล้ว reset page (ใช้กับ dropdown) */
   const patchFilters = useCallback(
@@ -192,18 +200,37 @@ export default function QuerySection({ rows }: Props) {
       }
     }
 
-    return Array.from(m.values()).sort((a, b) => b.amount - a.amount);
+    return Array.from(m.values());
   }, [filteredWorkingRows]);
+
+  const sortedDescriptionSummaryRows = useMemo(
+    () => sortDescriptionSummaryRows(descriptionSummaryRows, summarySort),
+    [descriptionSummaryRows, summarySort],
+  );
+
+  const onSummarySort = useCallback((key: SummarySortKey) => {
+    setSummarySort((prev) => {
+      const nextOrder =
+        prev.key === key
+          ? prev.order === "asc"
+            ? "desc"
+            : "asc"
+          : defaultSummarySortOrderFor(key);
+
+      return { key, order: nextOrder };
+    });
+    setSummaryPage(1);
+  }, []);
 
   const summaryTotalPages = Math.max(
     1,
-    Math.ceil(descriptionSummaryRows.length / PAGE_SIZE),
+    Math.ceil(sortedDescriptionSummaryRows.length / PAGE_SIZE),
   );
 
   const summaryPageData = useMemo(() => {
     const start = (summaryPage - 1) * PAGE_SIZE;
-    return descriptionSummaryRows.slice(start, start + PAGE_SIZE);
-  }, [descriptionSummaryRows, summaryPage]);
+    return sortedDescriptionSummaryRows.slice(start, start + PAGE_SIZE);
+  }, [sortedDescriptionSummaryRows, summaryPage]);
 
   // =========================
   // 4) Apply pending removals (apply เฉพาะใน filtered view)
@@ -230,7 +257,7 @@ export default function QuerySection({ rows }: Props) {
     const csv =
       viewMode === "detail"
         ? toCSV(filteredWorkingRows.map(({ _id, ...rest }) => rest))
-        : toDescriptionSummaryCSV(descriptionSummaryRows);
+        : toDescriptionSummaryCSV(sortedDescriptionSummaryRows);
 
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -244,7 +271,7 @@ export default function QuerySection({ rows }: Props) {
     a.click();
 
     URL.revokeObjectURL(url);
-  }, [descriptionSummaryRows, filteredWorkingRows, viewMode]);
+  }, [filteredWorkingRows, sortedDescriptionSummaryRows, viewMode]);
 
   const [exporting, setExporting] = useState(false);
 
@@ -254,7 +281,7 @@ export default function QuerySection({ rows }: Props) {
     const exportRowCount =
       viewMode === "detail"
         ? filteredWorkingRows.length
-        : descriptionSummaryRows.length;
+        : sortedDescriptionSummaryRows.length;
 
     if (exportRowCount > MAX_EXPORT_ROWS) {
       alert(
@@ -293,7 +320,7 @@ export default function QuerySection({ rows }: Props) {
       doc.text(
         viewMode === "detail"
           ? `BOQ Query Detail Result (${filteredWorkingRows.length.toLocaleString()} rows)`
-          : `BOQ Summary by Description (${descriptionSummaryRows.length.toLocaleString()} rows)`,
+          : `BOQ Summary by Description (${sortedDescriptionSummaryRows.length.toLocaleString()} rows)`,
         marginX,
         32,
       );
@@ -343,7 +370,7 @@ export default function QuerySection({ rows }: Props) {
               fmtNum(safeNum(r.labor)),
               fmtNum(safeNum(r.amount)),
             ])
-          : descriptionSummaryRows.map((r) => [
+          : sortedDescriptionSummaryRows.map((r) => [
               r.description,
               r.unit,
               fmtNum(r.qty),
@@ -438,22 +465,25 @@ export default function QuerySection({ rows }: Props) {
           .join(" | ");
         doc.text(`Sum Qty (by Unit): ${qtyText || "-"}`, marginX, y + 14);
       } else {
-        const sumQty = descriptionSummaryRows.reduce((a, r) => a + r.qty, 0);
-        const sumMaterial = descriptionSummaryRows.reduce(
+        const sumQty = sortedDescriptionSummaryRows.reduce(
+          (a, r) => a + r.qty,
+          0,
+        );
+        const sumMaterial = sortedDescriptionSummaryRows.reduce(
           (a, r) => a + r.material,
           0,
         );
-        const sumLabor = descriptionSummaryRows.reduce(
+        const sumLabor = sortedDescriptionSummaryRows.reduce(
           (a, r) => a + r.labor,
           0,
         );
-        const sumAmount = descriptionSummaryRows.reduce(
+        const sumAmount = sortedDescriptionSummaryRows.reduce(
           (a, r) => a + r.amount,
           0,
         );
 
         doc.text(
-          `Unique descriptions: ${descriptionSummaryRows.length.toLocaleString()}`,
+          `Unique descriptions: ${sortedDescriptionSummaryRows.length.toLocaleString()}`,
           marginX,
           y,
         );
@@ -472,7 +502,7 @@ export default function QuerySection({ rows }: Props) {
     } finally {
       setExporting(false);
     }
-  }, [descriptionSummaryRows, exporting, filteredWorkingRows, viewMode]);
+  }, [exporting, filteredWorkingRows, sortedDescriptionSummaryRows, viewMode]);
 
   // =========================
   // 6) Filter options (for dropdowns)
@@ -778,6 +808,8 @@ export default function QuerySection({ rows }: Props) {
             <QuerySummaryTable
               pageData={summaryPageData}
               summaryRows={descriptionSummaryRows}
+              sort={summarySort}
+              onSort={onSummarySort}
               page={summaryPage}
               totalPages={summaryTotalPages}
               setPage={setSummaryPage}

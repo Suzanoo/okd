@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-import { useMemo, useState } from "react";
 import { highlightText } from "@/lib/boq/highlight";
 
 export type DescriptionSummaryRow = {
@@ -15,7 +14,7 @@ export type DescriptionSummaryRow = {
   sourceRows: number;
 };
 
-type SortKey =
+export type SummarySortKey =
   | "description"
   | "unit"
   | "qty"
@@ -24,22 +23,29 @@ type SortKey =
   | "amount"
   | "sourceRows";
 
-type SortOrder = "asc" | "desc";
+export type SummarySortOrder = "asc" | "desc";
 
-type SortState = {
-  key: SortKey;
-  order: SortOrder;
+export type SummarySortState = {
+  key: SummarySortKey;
+  order: SummarySortOrder;
 };
 
 type Props = {
-  pageData: DescriptionSummaryRow[]; // kept for compatibility with QuerySection props
+  pageData: DescriptionSummaryRow[];
   summaryRows: DescriptionSummaryRow[];
+
+  sort: SummarySortState;
+  onSort: (key: SummarySortKey) => void;
+
   page: number;
-  totalPages: number; // kept for compatibility with QuerySection props
+  totalPages: number;
   setPage: React.Dispatch<React.SetStateAction<number>>;
+
   keywords: string[];
+
   fmtInt: (n: number) => string;
   fmtNum: (n: number) => string;
+
   tableWrap: string;
   thead: string;
   th: string;
@@ -52,13 +58,7 @@ type Props = {
   btnGhost: string;
 };
 
-const PAGE_SIZE = 20;
-
-function defaultOrderFor(key: SortKey): SortOrder {
-  return key === "description" || key === "unit" ? "asc" : "desc";
-}
-
-function sortIndicator(key: SortKey, sort: SortState) {
+function sortIndicator(key: SummarySortKey, sort: SummarySortState) {
   if (sort.key !== key) return "↕";
   return sort.order === "asc" ? "▲" : "▼";
 }
@@ -70,10 +70,10 @@ function compareText(a: string, b: string) {
   });
 }
 
-function compareRows(
+function compareSummaryRows(
   a: DescriptionSummaryRow,
   b: DescriptionSummaryRow,
-  sort: SortState,
+  sort: SummarySortState,
 ) {
   let result = 0;
 
@@ -105,13 +105,35 @@ function compareRows(
   return sort.order === "asc" ? result : -result;
 }
 
+export function defaultSummarySortOrderFor(
+  key: SummarySortKey,
+): SummarySortOrder {
+  return key === "description" || key === "unit" ? "asc" : "desc";
+}
+
+export function sortDescriptionSummaryRows(
+  rows: DescriptionSummaryRow[],
+  sort: SummarySortState,
+) {
+  return [...rows].sort((a, b) => compareSummaryRows(a, b, sort));
+}
+
 export default function QuerySummaryTable({
+  pageData,
   summaryRows,
+
+  sort,
+  onSort,
+
   page,
+  totalPages,
   setPage,
+
   keywords,
+
   fmtInt,
   fmtNum,
+
   tableWrap,
   thead,
   th,
@@ -123,53 +145,21 @@ export default function QuerySummaryTable({
   markWrap,
   btnGhost,
 }: Props) {
-  const [sort, setSort] = useState<SortState>({
-    key: "amount",
-    order: "desc",
-  });
-
-  const sortedRows = useMemo(() => {
-    return [...summaryRows].sort((a, b) => compareRows(a, b, sort));
-  }, [summaryRows, sort]);
-
-  const actualTotalPages = Math.max(
-    1,
-    Math.ceil(sortedRows.length / PAGE_SIZE),
-  );
-  const safePage = Math.min(page, actualTotalPages);
-
-  const currentPageData = useMemo(() => {
-    const start = (safePage - 1) * PAGE_SIZE;
-    return sortedRows.slice(start, start + PAGE_SIZE);
-  }, [safePage, sortedRows]);
-
   const sumQty = summaryRows.reduce((a, r) => a + r.qty, 0);
   const sumMaterial = summaryRows.reduce((a, r) => a + r.material, 0);
   const sumLabor = summaryRows.reduce((a, r) => a + r.labor, 0);
   const sumAmount = summaryRows.reduce((a, r) => a + r.amount, 0);
 
-  const changeSort = (key: SortKey) => {
-    setSort((prev) => {
-      const nextOrder =
-        prev.key === key
-          ? prev.order === "asc"
-            ? "desc"
-            : "asc"
-          : defaultOrderFor(key);
-
-      return { key, order: nextOrder };
-    });
-    setPage(1);
-  };
+  const safePage = Math.min(page, totalPages);
 
   const sortableHeader = (
-    key: SortKey,
+    key: SummarySortKey,
     label: string,
     align: "left" | "right" = "left",
   ) => (
     <button
       type="button"
-      onClick={() => changeSort(key)}
+      onClick={() => onSort(key)}
       className={
         "inline-flex w-full items-center gap-1 rounded-md transition hover:text-[color:var(--color-foreground)] " +
         (align === "right"
@@ -221,7 +211,7 @@ export default function QuerySummaryTable({
           </thead>
 
           <tbody>
-            {currentPageData.map((r) => (
+            {pageData.map((r) => (
               <tr key={r._id} className={rowBase}>
                 <td className={td}>
                   <span className={markWrap}>
@@ -289,7 +279,7 @@ export default function QuerySummaryTable({
       <div className="flex items-center justify-between text-xs">
         <div className={muted}>
           Page <span className={`${fg} font-medium`}>{safePage}</span> /{" "}
-          <span className={`${fg} font-medium`}>{actualTotalPages}</span>
+          <span className={`${fg} font-medium`}>{totalPages}</span>
         </div>
 
         <div className="flex gap-2">
@@ -297,7 +287,7 @@ export default function QuerySummaryTable({
             type="button"
             disabled={safePage === 1}
             onClick={() =>
-              setPage((p) => Math.max(1, Math.min(p, actualTotalPages) - 1))
+              setPage((p) => Math.max(1, Math.min(p, totalPages) - 1))
             }
             className={btnGhost}
           >
@@ -305,11 +295,9 @@ export default function QuerySummaryTable({
           </button>
           <button
             type="button"
-            disabled={safePage >= actualTotalPages}
+            disabled={safePage >= totalPages}
             onClick={() =>
-              setPage((p) =>
-                Math.min(actualTotalPages, Math.min(p, actualTotalPages) + 1),
-              )
+              setPage((p) => Math.min(totalPages, Math.min(p, totalPages) + 1))
             }
             className={btnGhost}
           >
