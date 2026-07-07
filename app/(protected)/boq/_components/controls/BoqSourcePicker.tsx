@@ -13,6 +13,8 @@ type Props = {
   onUpload: (file: File) => void;
 };
 
+const DEFAULT_BOQ_PATH = "/boq/example_boq.xlsx";
+
 export default function BoqSourcePicker({
   sourceType,
   sourceName,
@@ -24,11 +26,16 @@ export default function BoqSourcePicker({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    onUpload(file);
 
-    // Allow selecting the same file again later.
+    onUpload(file);
     e.currentTarget.value = "";
   };
+
+  const cardBtn =
+    "inline-flex h-10 items-center justify-center rounded-xl border border-[color:var(--color-border)] " +
+    "bg-[color:var(--color-surface-2)] px-4 text-xs font-medium text-[color:var(--color-foreground)] " +
+    "shadow-[var(--shadow-input)] transition hover:-translate-y-[1px] hover:shadow-md active:translate-y-0 " +
+    "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0";
 
   return (
     <section className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4 shadow-[var(--shadow-card)]">
@@ -37,26 +44,22 @@ export default function BoqSourcePicker({
           <div className="text-sm font-medium text-[color:var(--color-muted-foreground)]">
             BOQ Source
           </div>
+
           <div className="mt-1 text-xs text-[color:var(--color-muted-foreground)]">
             Current:{" "}
             <span className="font-medium text-[color:var(--color-foreground)]">
               {sourceName}
-            </span>
-            {sourceType === "default" ? " (default)" : " (uploaded)"}
+            </span>{" "}
+            {sourceType === "default" ? "(example)" : "(uploaded)"}
           </div>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <button
-            type="button"
-            onClick={onUseDefault}
-            disabled={isLoading || sourceType === "default"}
-            className="h-10 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 text-xs text-[color:var(--color-foreground)] shadow-[var(--shadow-input)] transition hover:opacity-90 disabled:opacity-50"
-          >
-            Use default
-          </button>
+          <a href={DEFAULT_BOQ_PATH} download={defaultName} className={cardBtn}>
+            Download Example
+          </a>
 
-          <label className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl bg-[color:var(--color-accent)] px-4 text-xs font-medium text-white shadow-[var(--shadow-input)] transition hover:brightness-110 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50">
+          <label className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl bg-[color:var(--color-accent)] px-4 text-xs font-medium text-white shadow-[var(--shadow-input)] transition hover:-translate-y-[1px] hover:shadow-md hover:brightness-110 active:translate-y-0 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[:disabled]:hover:translate-y-0">
             Upload Excel
             <input
               type="file"
@@ -66,12 +69,21 @@ export default function BoqSourcePicker({
               onChange={handleFileChange}
             />
           </label>
+
+          <button
+            type="button"
+            onClick={onUseDefault}
+            disabled={isLoading || sourceType === "default"}
+            className={cardBtn}
+          >
+            Reset to Example
+          </button>
         </div>
       </div>
 
       <div className="mt-2 text-[11px] text-[color:var(--color-muted-foreground)]">
-        Default file: <span className="font-mono">{defaultName}</span> • Upload
-        is processed in browser only.
+        Example: <span className="font-mono">{defaultName}</span> • Upload is
+        processed in browser only.
       </div>
     </section>
   );
