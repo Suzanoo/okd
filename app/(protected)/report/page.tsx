@@ -86,14 +86,14 @@ export default function ReportPage() {
   };
 
   return (
-    <main className="min-h-screen bg-background px-6 py-10 text-foreground">
+    <main className="min-h-screen bg-background px-4 py-6 text-foreground md:px-6 md:py-10">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-sm uppercase tracking-[0.35em] text-muted-foreground">
+        <div className="mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:flex-wrap md:items-end md:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground md:text-sm md:tracking-[0.35em]">
               OKD Dashboard
             </p>
-            <h1 className="mt-3 text-4xl font-bold tracking-tight">
+            <h1 className="mt-2 text-2xl font-bold tracking-tight md:mt-3 md:text-4xl">
               QUE SERA, SERA. 🙈 🙉 🙊
             </h1>
           </div>

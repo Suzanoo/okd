@@ -21,11 +21,15 @@ function Card({
             : "text-foreground";
 
   return (
-    <div className="rounded-3xl border border-border bg-surface p-5 shadow-card">
-      <div className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+    <div className="rounded-3xl border border-border bg-surface p-4 shadow-card md:p-5">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground md:text-xs md:tracking-[0.22em]">
         {title}
       </div>
-      <div className={`mt-4 text-4xl font-black ${color}`}>{value}</div>
+      <div
+        className={`mt-3 text-3xl font-black tabular-nums md:mt-4 md:text-4xl ${color}`}
+      >
+        {value}
+      </div>
     </div>
   );
 }
@@ -34,7 +38,7 @@ export function KPICards({ kpi }: { kpi: KpiResult | null }) {
   const isGood = (kpi?.variance ?? 0) >= 0;
 
   return (
-    <section className="grid gap-5 md:grid-cols-4">
+    <section className="grid gap-3 sm:grid-cols-2 md:gap-5 lg:grid-cols-4">
       <Card
         title="Planned Progress"
         value={`${kpi?.plan.toFixed(2) ?? "0.00"}%`}

@@ -22,54 +22,57 @@ export function ReportControls({
   workbookName: string;
   onWorkbookUpload: (file: File) => void;
 }) {
+  const controlClass =
+    "h-11 rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground outline-none";
+  const buttonClass =
+    "inline-flex h-11 items-center justify-center rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground transition hover:bg-surface-2";
+
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-2 shadow-card">
-      <a
-        href="/data/example_progress.xlsx"
-        download
-        className="h-11 rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground"
-      >
-        Download Default
-      </a>
+    <div className="w-full rounded-2xl border border-border bg-surface p-2 shadow-card md:w-auto">
+      <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center md:gap-3">
+        <a href="/data/example_progress.xlsx" download className={buttonClass}>
+          Download
+        </a>
 
-      <label className="h-11 cursor-pointer rounded-xl border border-border bg-background px-4 py-3 text-sm font-semibold text-foreground">
-        Upload Excel
-        <input
-          type="file"
-          accept=".xlsx"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) onWorkbookUpload(file);
-          }}
-        />
-      </label>
+        <label className={`${buttonClass} cursor-pointer`}>
+          Upload Excel
+          <input
+            type="file"
+            accept=".xlsx"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onWorkbookUpload(file);
+            }}
+          />
+        </label>
 
-      <span className="max-w-[220px] truncate text-xs text-muted-foreground">
-        {workbookName}
-      </span>
+        <span className="col-span-2 min-w-0 truncate px-2 py-1 text-xs text-muted-foreground md:col-span-1 md:max-w-[220px] md:px-0">
+          {workbookName}
+        </span>
 
-      <select
-        value={mode}
-        onChange={(e) => setMode(e.target.value as ViewMode)}
-        className="h-11 rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground outline-none"
-      >
-        <option value="weekly">Weekly</option>
-        <option value="monthly">Monthly</option>
-      </select>
+        <select
+          value={mode}
+          onChange={(e) => setMode(e.target.value as ViewMode)}
+          className={controlClass}
+        >
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
 
-      <select
-        value={cutoffDate}
-        onChange={(e) => setCutoffDate(e.target.value)}
-        className="h-11 min-w-[160px] rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground outline-none"
-      >
-        <option value="">Select cutoff</option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+        <select
+          value={cutoffDate}
+          onChange={(e) => setCutoffDate(e.target.value)}
+          className={`${controlClass} min-w-0 md:min-w-[160px]`}
+        >
+          <option value="">Select cutoff</option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
     </div>
   );
 }

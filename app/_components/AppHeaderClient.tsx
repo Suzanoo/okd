@@ -75,7 +75,7 @@ export default function AppHeader({ user, isAdmin }: Props) {
   const isActive = (href: string) => pathname === href;
 
   return (
-    <header className="sticky top-0 z-50 bg-black/20 backdrop-blur-md">
+    <header className="sticky top-0 z-50 bg-black/20 pt-[env(safe-area-inset-top)] backdrop-blur-md">
       <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4">
         {/* LEFT: Logo -> Home */}
         <Link
@@ -183,7 +183,7 @@ export default function AppHeader({ user, isAdmin }: Props) {
           type="button"
           onClick={() => setOpen(false)}
           className={[
-            "fixed inset-0 z-40 bg-black/60 backdrop-blur-[3px] transition-opacity duration-200",
+            "fixed inset-0 z-40 bg-black/70 backdrop-blur-[4px] transition-opacity duration-200",
             open ? "opacity-100" : "opacity-0",
           ].join(" ")}
           aria-label="Close menu overlay"
@@ -196,9 +196,9 @@ export default function AppHeader({ user, isAdmin }: Props) {
           role="dialog"
           aria-modal="true"
           className={[
-            "fixed right-0 top-0 z-50 h-dvh w-[86vw] max-w-[360px]",
+            "fixed right-0 top-0 z-50 h-dvh w-[85vw] max-w-xs pt-[env(safe-area-inset-top)]",
             // cinematic glass: gradient + blur + subtle noise-like feel via opacity layers
-            "bg-linear-to-b from-white/[0.10] via-black/[0.55] to-black/[0.72]",
+            "bg-gradient-to-b from-white/[0.10] via-black/[0.72] to-black/[0.86]",
             "backdrop-blur-xl",
             "border-l border-white/15 ring-1 ring-white/10",
             "shadow-[0_24px_80px_rgba(0,0,0,0.55)]",
@@ -207,7 +207,7 @@ export default function AppHeader({ user, isAdmin }: Props) {
           ].join(" ")}
         >
           {/* Drawer header */}
-          <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
+          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-white/10 p-2 ring-1 ring-white/10">
                 <Image
@@ -222,13 +222,11 @@ export default function AppHeader({ user, isAdmin }: Props) {
                 <div className="text-sm font-semibold text-white">
                   {APP_NAME}
                 </div>
-                <div className="text-xs text-white/60">
-                  {user ? (
-                    <div className="px-3 py-2 text-xs text-white/70 break-all">
-                      {user.email}
-                    </div>
-                  ) : null}
-                </div>
+                {user ? (
+                  <div className="max-w-[170px] truncate text-xs text-white/60">
+                    {user.email}
+                  </div>
+                ) : null}
               </div>
             </div>
 
@@ -243,7 +241,7 @@ export default function AppHeader({ user, isAdmin }: Props) {
           </div>
 
           {/* Drawer content */}
-          <nav className="px-3 py-4">
+          <nav className="flex h-[calc(100dvh-84px-env(safe-area-inset-top))] flex-col px-3 py-3">
             <ul className="flex flex-col gap-1">
               {nav.map((item, idx) => {
                 const active = isActive(item.href);
@@ -254,7 +252,7 @@ export default function AppHeader({ user, isAdmin }: Props) {
                       onClick={() => setOpen(false)}
                       ref={idx === 0 ? firstLinkRef : undefined}
                       className={[
-                        "flex items-center justify-between rounded-2xl px-4 py-3 text-sm font-medium transition",
+                        "flex items-center justify-between rounded-2xl px-4 py-2.5 text-sm font-medium transition",
                         "border border-white/10 bg-white/[0.03]",
                         "focus:outline-none focus:ring-2 focus:ring-white/20",
                         active
@@ -277,27 +275,28 @@ export default function AppHeader({ user, isAdmin }: Props) {
             </ul>
 
             {/* External link */}
-            <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-2">
+            <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-2">
               <a
                 href="https://www.okmd.or.th/"
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center justify-between rounded-2xl px-3 py-3 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                className="flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/20"
               >
                 <span>{APP_NAME} Website</span>
                 <ExternalLink className="h-4 w-4" />
               </a>
             </div>
 
-            {/* Logout */}
+            <div className="flex-1" />
+
             {/* Auth block (mobile drawer) */}
             {user ? (
-              <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-2">
+              <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-2">
                 {isAdmin ? (
                   <Link
                     href="/admin"
                     onClick={() => setOpen(false)}
-                    className="flex items-center justify-between rounded-2xl px-3 py-3 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                    className="flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                   >
                     <span>ADMIN</span>
                     <span className="text-xs text-white/60">Manage</span>
@@ -312,13 +311,13 @@ export default function AppHeader({ user, isAdmin }: Props) {
                 </div>
               </div>
             ) : null}
-            <div className="mt-4 px-2 text-xs text-white/50">
+            <div className="mt-3 px-2 text-xs text-white/45">
               Tip: กด <span className="text-white/80">Esc</span> เพื่อปิดเมนู
             </div>
           </nav>
 
           {/* Bottom safe area padding */}
-          <div className="h-6" />
+          <div className="h-[env(safe-area-inset-bottom)]" />
         </aside>
       </div>
     </header>
