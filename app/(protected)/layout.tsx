@@ -5,7 +5,6 @@ export default async function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // เช็ค login + is_active (ครั้งเดียว)
   await requireActiveUser();
 
   return <>{children}</>;

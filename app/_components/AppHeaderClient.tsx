@@ -1,21 +1,26 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
-import { APP_LOGO, APP_NAME } from "@/config/app.config";
-
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { Menu, X, ExternalLink } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ExternalLink, Menu, X } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
-import ThemeToggle from "./ThemeToggle";
-import LogoutButton from "./LogoutButton";
 
-const nav = [
+import { APP_LOGO, APP_NAME } from "@/config/app.config";
+import LogoutButton from "./LogoutButton";
+import ThemeToggle from "./ThemeToggle";
+
+const publicNav = [
   { href: "/", label: "HOME" },
+  { href: "/media", label: "MEDIA" },
+  { href: "/contact", label: "CONTACT" },
+];
+
+const stakeholderNav = [
   { href: "/boq", label: "BOQ" },
   { href: "/report", label: "REPORT" },
-  { href: "/contact", label: "CONTACT US" },
+  { href: "/media", label: "MEDIA" },
 ];
 
 type Props = {
@@ -23,27 +28,23 @@ type Props = {
   isAdmin: boolean;
 };
 
-export default function AppHeader({ user, isAdmin }: Props) {
+export default function AppHeaderClient({ user }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   const menuBtnRef = useRef<HTMLButtonElement | null>(null);
   const firstLinkRef = useRef<HTMLAnchorElement | null>(null);
-
-  // close on route change
   const prevPathRef = useRef<string | null>(null);
+
+  const nav = useMemo(() => (user ? stakeholderNav : publicNav), [user]);
 
   useEffect(() => {
     const prev = prevPathRef.current;
     prevPathRef.current = pathname;
 
-    if (prev !== null && prev !== pathname && open) {
-      setOpen(false);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }
+    if (prev !== null && prev !== pathname && open) setOpen(false);
   }, [pathname, open]);
 
-  // lock background scroll when open
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -53,31 +54,27 @@ export default function AppHeader({ user, isAdmin }: Props) {
     };
   }, [open]);
 
-  // close on ESC
   useEffect(() => {
+    if (!open) return;
+
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
-    if (open) window.addEventListener("keydown", onKeyDown);
+
+    window.addEventListener("keydown", onKeyDown);
+    requestAnimationFrame(() => firstLinkRef.current?.focus());
+
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
-  // focus management: open -> focus first item, close -> return focus to button
-  useEffect(() => {
-    if (open) {
-      // wait next paint so refs are ready
-      requestAnimationFrame(() => firstLinkRef.current?.focus());
-    } else {
-      requestAnimationFrame(() => menuBtnRef.current?.focus());
-    }
-  }, [open]);
-
-  const isActive = (href: string) => pathname === href;
+  const isActive = (href: string) => {
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   return (
-    <header className="sticky top-0 z-50 bg-black/20 pt-[env(safe-area-inset-top)] backdrop-blur-md">
-      <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4">
-        {/* LEFT: Logo -> Home */}
+    <header className="sticky top-0 z-50 bg-black/35 pt-[env(safe-area-inset-top)] text-white backdrop-blur-xl supports-[backdrop-filter]:bg-black/25">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-6 md:py-4">
         <Link
           href="/"
           aria-label="Go to Home"
@@ -87,15 +84,17 @@ export default function AppHeader({ user, isAdmin }: Props) {
           <Image
             src={APP_LOGO}
             alt={APP_NAME}
-            width={50}
-            height={50}
-            className="rounded-full bg-white/10 p-1 ring-1 ring-black backdrop-blur-md object-contain"
+            width={48}
+            height={48}
+            className="rounded-full bg-white/10 p-1 ring-1 ring-white/15 object-contain"
             priority
           />
+          <span className="hidden text-sm font-semibold tracking-tight sm:inline">
+            {APP_NAME} CM
+          </span>
         </Link>
 
-        {/* CENTER: Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-6">
+        <nav className="hidden items-center gap-6 md:flex">
           {nav.map((item) => {
             const active = isActive(item.href);
             return (
@@ -103,8 +102,8 @@ export default function AppHeader({ user, isAdmin }: Props) {
                 key={item.href}
                 href={item.href}
                 className={[
-                  "text-sm font-medium transition",
-                  active ? "text-white" : "text-white/90 hover:text-white",
+                  "text-sm font-semibold transition",
+                  active ? "text-white" : "text-white/70 hover:text-white",
                 ].join(" ")}
               >
                 {item.label}
@@ -116,61 +115,46 @@ export default function AppHeader({ user, isAdmin }: Props) {
             href="https://www.okmd.or.th/"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm text-white/90 backdrop-blur-md transition hover:bg-white/15"
+            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/15 hover:text-white"
           >
-            {APP_NAME} Website
+            OKMD Website
             <ExternalLink className="h-4 w-4" />
           </a>
         </nav>
 
-        {/* RIGHT */}
         <div className="flex items-center gap-2 md:gap-3">
-          {/* Logout : Desktop auth actions only */}
           {user ? (
-            <div className="hidden md:flex items-center gap-3">
-              <span className="text-xs text-muted-foreground">
+            <div className="hidden items-center gap-3 md:flex">
+              <span className="max-w-[180px] truncate text-xs text-white/55">
                 {user.email}
               </span>
-              {isAdmin ? (
-                <Link
-                  href="/admin"
-                  className="text-sm text-white/90 hover:text-white transition"
-                >
-                  ADMIN
-                </Link>
-              ) : null}
               <LogoutButton />
             </div>
-          ) : null}
+          ) : (
+            <Link
+              href="/boq"
+              className="hidden rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-sm font-medium text-white/85 transition hover:bg-white/15 hover:text-white md:inline-flex"
+            >
+              Login
+            </Link>
+          )}
 
-          {/* Hamburger (mobile only) */}
           <button
             ref={menuBtnRef}
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="md:hidden relative inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 p-2 text-white/90 backdrop-blur-md transition hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/25"
+            className="relative inline-flex items-center justify-center rounded-full border border-white/15 bg-white/10 p-2 text-white/90 transition hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/25 md:hidden"
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
             aria-controls="mobile-drawer"
           >
-            {/* Active indicator */}
-            <span
-              className={[
-                "absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full transition",
-                open ? "opacity-100 scale-100" : "opacity-0 scale-75",
-              ].join(" ")}
-              style={{ background: "hsl(217 91% 60%)" }}
-              aria-hidden="true"
-            />
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
 
-          {/* Theme switch */}
           <ThemeToggle />
         </div>
       </div>
 
-      {/* Mobile Drawer */}
       <div
         className={[
           "md:hidden",
@@ -178,7 +162,6 @@ export default function AppHeader({ user, isAdmin }: Props) {
         ].join(" ")}
         aria-hidden={!open}
       >
-        {/* Backdrop (blur + fade) */}
         <button
           type="button"
           onClick={() => setOpen(false)}
@@ -190,58 +173,45 @@ export default function AppHeader({ user, isAdmin }: Props) {
           tabIndex={open ? 0 : -1}
         />
 
-        {/* Drawer Panel (right) */}
         <aside
           id="mobile-drawer"
           role="dialog"
           aria-modal="true"
           className={[
             "fixed right-0 top-0 z-50 h-dvh w-[85vw] max-w-xs pt-[env(safe-area-inset-top)]",
-            // cinematic glass: gradient + blur + subtle noise-like feel via opacity layers
-            "bg-gradient-to-b from-white/[0.10] via-black/[0.72] to-black/[0.86]",
-            "backdrop-blur-xl",
-            "border-l border-white/15 ring-1 ring-white/10",
-            "shadow-[0_24px_80px_rgba(0,0,0,0.55)]",
+            "border-l border-white/15 bg-gradient-to-b from-zinc-900/95 to-black/95 shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl",
             "transition-transform duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]",
             open ? "translate-x-0" : "translate-x-full",
           ].join(" ")}
         >
-          {/* Drawer header */}
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-white/10 p-2 ring-1 ring-white/10">
-                <Image
-                  src={APP_LOGO}
-                  alt={APP_NAME}
-                  width={36}
-                  height={36}
-                  className="object-contain"
-                />
-              </div>
-              <div>
-                <div className="text-sm font-semibold text-white">
-                  {APP_NAME}
+            <div className="flex min-w-0 items-center gap-3">
+              <Image
+                src={APP_LOGO}
+                alt={APP_NAME}
+                width={38}
+                height={38}
+                className="rounded-full bg-white/10 p-1 object-contain"
+              />
+              <div className="min-w-0">
+                <div className="text-sm font-semibold">{APP_NAME} CM</div>
+                <div className="truncate text-xs text-white/50">
+                  {user ? user.email : "Public"}
                 </div>
-                {user ? (
-                  <div className="max-w-[170px] truncate text-xs text-white/60">
-                    {user.email}
-                  </div>
-                ) : null}
               </div>
             </div>
 
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/10 p-2 text-white/90 transition hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/25"
+              className="rounded-full border border-white/15 bg-white/10 p-2 text-white/90 transition hover:bg-white/15"
               aria-label="Close menu"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          {/* Drawer content */}
-          <nav className="flex h-[calc(100dvh-84px-env(safe-area-inset-top))] flex-col px-3 py-3">
+          <nav className="flex h-[calc(100dvh-76px-env(safe-area-inset-top))] flex-col px-3 py-3">
             <ul className="flex flex-col gap-1">
               {nav.map((item, idx) => {
                 const active = isActive(item.href);
@@ -252,21 +222,15 @@ export default function AppHeader({ user, isAdmin }: Props) {
                       onClick={() => setOpen(false)}
                       ref={idx === 0 ? firstLinkRef : undefined}
                       className={[
-                        "flex items-center justify-between rounded-2xl px-4 py-2.5 text-sm font-medium transition",
-                        "border border-white/10 bg-white/[0.03]",
-                        "focus:outline-none focus:ring-2 focus:ring-white/20",
+                        "flex items-center justify-between rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-white/20",
                         active
                           ? "bg-white/14 text-white"
-                          : "text-white/90 hover:bg-white/10 hover:text-white",
+                          : "bg-white/[0.03] text-white/85 hover:bg-white/10 hover:text-white",
                       ].join(" ")}
                     >
                       <span>{item.label}</span>
                       {active ? (
-                        <span
-                          className="h-2 w-2 rounded-full"
-                          style={{ background: "hsl(160 84% 39%)" }}
-                          aria-hidden="true"
-                        />
+                        <span className="h-2 w-2 rounded-full bg-emerald-400" />
                       ) : null}
                     </Link>
                   </li>
@@ -274,50 +238,37 @@ export default function AppHeader({ user, isAdmin }: Props) {
               })}
             </ul>
 
-            {/* External link */}
             <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-2">
               <a
                 href="https://www.okmd.or.th/"
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                className="flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium text-white/85 transition hover:bg-white/10 hover:text-white"
               >
-                <span>{APP_NAME} Website</span>
+                <span>OKMD Website</span>
                 <ExternalLink className="h-4 w-4" />
               </a>
             </div>
 
             <div className="flex-1" />
 
-            {/* Auth block (mobile drawer) */}
-            {user ? (
-              <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-2">
-                {isAdmin ? (
-                  <Link
-                    href="/admin"
-                    onClick={() => setOpen(false)}
-                    className="flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/20"
-                  >
-                    <span>ADMIN</span>
-                    <span className="text-xs text-white/60">Manage</span>
-                  </Link>
-                ) : null}
-
-                <div className="mt-2">
-                  <LogoutButton
-                    variant="drawer"
-                    onAfterLogout={() => setOpen(false)}
-                  />
-                </div>
-              </div>
-            ) : null}
-            <div className="mt-3 px-2 text-xs text-white/45">
-              Tip: กด <span className="text-white/80">Esc</span> เพื่อปิดเมนู
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-2">
+              {user ? (
+                <LogoutButton
+                  variant="drawer"
+                  onAfterLogout={() => setOpen(false)}
+                />
+              ) : (
+                <Link
+                  href="/boq"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center justify-center rounded-2xl px-4 py-3 text-sm font-semibold text-white/90 transition hover:bg-white/10"
+                >
+                  Stakeholder login
+                </Link>
+              )}
             </div>
           </nav>
-
-          {/* Bottom safe area padding */}
-          <div className="h-[env(safe-area-inset-bottom)]" />
         </aside>
       </div>
     </header>
