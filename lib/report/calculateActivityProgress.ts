@@ -11,10 +11,13 @@ export function calculateActivityProgress(
       .filter((week) => week.date <= cutoffDate)
       .reduce((sum, week) => sum + week.value, 0)
 
+
+    
+
     return {
       wbs: row.wbs,
       activity: row.activity,
-      amount: row.amount,
+      amount: row.amount * progress/100,
       type: row.type,
       progress,
     }
