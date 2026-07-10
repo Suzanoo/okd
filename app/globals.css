@@ -19,28 +19,28 @@
   --shadow-lg: 0 14px 40px rgba(2, 6, 23, 0.12);
   --shadow-md: 0 10px 26px rgba(2, 6, 23, 0.10);
 
-  /* accent (OKMD-ish calm) */
-  --accent: #2563eb; /* blue-600 */
-  --accent-2: #06b6d4; /* cyan-500 */
+  /* accent */
+  --accent: #2563eb;
+  --accent-2: #06b6d4;
+  --accent-soft: rgba(37, 99, 235, 0.10);
   color-scheme: light;
 
   /* status */
   --success: #16a34a;
   --warning: #f59e0b;
   --danger: #dc2626;
-
 }
 
 .dark {
   /* page */
-  --bg: #0b1220;      /* deep navy */
-  --fg: #e5e7eb;      /* slate-200 */
-  --muted: #9ca3af;   /* gray-400 */
+  --bg: #0b1220;
+  --fg: #e5e7eb;
+  --muted: #9ca3af;
 
   /* surfaces */
-  --surface: #141b2d;   /* card */
-  --surface-2: #0f172a; /* panel */
-  --surface-3: #0b1326; /* deeper panel */
+  --surface: #141b2d;
+  --surface-2: #0f172a;
+  --surface-3: #0b1326;
 
   /* borders */
   --border: rgba(255, 255, 255, 0.08);
@@ -50,15 +50,64 @@
   --shadow-md: 0 12px 28px rgba(0, 0, 0, 0.45);
 
   /* accent */
-  --accent: #60a5fa;   /* blue-400 */
-  --accent-2: #22d3ee; /* cyan-400 */
+  --accent: #60a5fa;
+  --accent-2: #22d3ee;
+  --accent-soft: rgba(96, 165, 250, 0.14);
   color-scheme: dark;
 
-  /* status */  
+  /* status */
   --success: #4ade80;
   --warning: #fbbf24;
   --danger: #f87171;
+}
 
+/* ===== Palette overrides ===== */
+:root[data-palette="ocean"] {
+  --accent: #0891b2;
+  --accent-2: #14b8a6;
+  --accent-soft: rgba(8, 145, 178, 0.11);
+}
+
+.dark[data-palette="ocean"] {
+  --accent: #22d3ee;
+  --accent-2: #2dd4bf;
+  --accent-soft: rgba(34, 211, 238, 0.14);
+}
+
+:root[data-palette="forest"] {
+  --accent: #16a34a;
+  --accent-2: #65a30d;
+  --accent-soft: rgba(22, 163, 74, 0.11);
+}
+
+.dark[data-palette="forest"] {
+  --accent: #4ade80;
+  --accent-2: #a3e635;
+  --accent-soft: rgba(74, 222, 128, 0.14);
+}
+
+:root[data-palette="warm"] {
+  --accent: #ea580c;
+  --accent-2: #f59e0b;
+  --accent-soft: rgba(234, 88, 12, 0.12);
+}
+
+.dark[data-palette="warm"] {
+  --accent: #fb923c;
+  --accent-2: #fbbf24;
+  --accent-soft: rgba(251, 146, 60, 0.15);
+}
+
+:root[data-palette="midnight"] {
+  --accent: #7c3aed;
+  --accent-2: #2563eb;
+  --accent-soft: rgba(124, 58, 237, 0.11);
+}
+
+.dark[data-palette="midnight"] {
+  --accent: #a78bfa;
+  --accent-2: #60a5fa;
+  --accent-soft: rgba(167, 139, 250, 0.15);
 }
 
 /* ===== Tailwind v4 theme tokens ===== */
@@ -78,18 +127,29 @@
 
   --color-accent: var(--accent);
   --color-accent-2: var(--accent-2);
+  --color-accent-soft: var(--accent-soft);
 
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
-
 }
 
 /* ===== Base styles ===== */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--bg);
   color: var(--fg);
   font-family: Arial, Helvetica, sans-serif;
 }
 
-
+::selection {
+  background: var(--accent);
+  color: white;
+}

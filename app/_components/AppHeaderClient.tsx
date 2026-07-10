@@ -90,7 +90,7 @@ export default function AppHeaderClient({ user }: Props) {
             priority
           />
           <span className="hidden text-sm font-semibold tracking-tight sm:inline">
-            {APP_NAME} CM
+            {APP_NAME}
           </span>
         </Link>
 
@@ -117,7 +117,7 @@ export default function AppHeaderClient({ user }: Props) {
             rel="noreferrer"
             className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/15 hover:text-white"
           >
-            OKMD Website
+            OKd Website
             <ExternalLink className="h-4 w-4" />
           </a>
         </nav>

@@ -1,203 +1,297 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { APP_NAME, BG_IMAGE } from "@/config/app.config";
+import { APP_NAME } from "@/config/app.config";
+import { siteConfig } from "@/config/site.config";
 
-const projectHighlights = [
-  {
-    label: "Project type",
-    value: "Construction Management",
-    detail:
-      "Public visibility and stakeholder workspace for OKMD project control.",
-  },
-  {
-    label: "Current focus",
-    value: "Progress • Cost • Records",
-    detail:
-      "Track project status through BOQ, progress reports and visual records.",
-  },
-  {
-    label: "Platform stage",
-    value: "V1 Roadmap",
-    detail:
-      "Foundation, information architecture, public website and dashboard.",
-  },
-];
+function SectionHeading({
+  eyebrow,
+  title,
+  description,
+  align = "left",
+}: {
+  eyebrow: string;
+  title: string;
+  description?: string;
+  align?: "left" | "center";
+}) {
+  return (
+    <div
+      className={
+        align === "center" ? "mx-auto max-w-3xl text-center" : "max-w-3xl"
+      }
+    >
+      <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+        {eyebrow}
+      </p>
+      <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+        {title}
+      </h2>
+      {description ? (
+        <p className="mt-4 text-base leading-8 text-muted-foreground">
+          {description}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
-const publicSections = [
-  {
-    title: "Project overview",
-    description:
-      "พื้นที่สื่อสารภาพรวมโครงการ ให้ผู้เกี่ยวข้องเห็นสถานะและทิศทางเดียวกัน",
-  },
-  {
-    title: "Progress visibility",
-    description:
-      "ติดตามความก้าวหน้าโครงการผ่านรายงาน Plan vs Actual และ S-curve",
-  },
-  {
-    title: "Visual records",
-    description:
-      "รวม timelapse และบันทึกภาพงานก่อสร้าง เพื่อใช้เป็นหลักฐานและสื่อสารความคืบหน้า",
-  },
-];
+function ProgressBar({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between text-sm">
+        <span className="font-medium text-foreground">{label}</span>
+        <span className="text-muted-foreground">{value}%</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-surface-2">
+        <div
+          className="h-full rounded-full bg-accent"
+          style={{ width: `${value}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
-const stakeholderModules = [
-  {
-    href: "/boq",
-    title: "BOQ Control",
-    description: "Quantity, cost, WBS summary and package query.",
-  },
-  {
-    href: "/report",
-    title: "Progress Report",
-    description: "Plan vs Actual, S-curve, KPI and activity progress.",
-  },
-  {
-    href: "/media",
-    title: "Media Records",
-    description: "Timelapse, photo logs and visual project records.",
-  },
-];
+function Card({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={[
+        "rounded-[2rem] border border-border bg-surface/90 shadow-card backdrop-blur-sm",
+        "transition duration-300 hover:-translate-y-1 hover:shadow-card-lg",
+        className,
+      ].join(" ")}
+    >
+      {children}
+    </div>
+  );
+}
 
 export default function HomePage() {
+  const { hero, overview, progress, timelapse, news } = siteConfig;
+
+  const heroTitle = hero.title.trim();
+  const heroTitleText = heroTitle.replace(/\s*🙉\s*🙈\s*🙊\s*$/, "").trim();
+  const monkeyEmoji = heroTitle
+    .slice(heroTitleText.length)
+    .trim()
+    .replace(/\s+/g, " ");
+  const hasMonkeyEmoji = heroTitleText !== heroTitle;
+
   return (
-    <main className="relative min-h-screen overflow-hidden bg-background text-white">
-      <Image
-        src={BG_IMAGE}
-        alt={`${APP_NAME} construction management background`}
-        fill
-        priority
-        className="object-cover"
-      />
+    <main className="bg-background text-foreground transition-colors duration-300">
+      <section className="relative min-h-[calc(100vh-72px)] overflow-hidden">
+        <Image
+          src={hero.image}
+          alt={hero.title}
+          fill
+          priority
+          className="object-cover brightness-[0.86] saturate-[0.9] dark:brightness-[0.72]"
+        />
+        {/* <div className="absolute inset-0 bg-gradient-to-r from-slate-950/75 via-slate-950/38 to-slate-950/10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-slate-950/20" /> */}
 
-      <div className="absolute inset-0 bg-black/50" />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/50 to-black/90" />
-
-      <div className="relative mx-auto flex min-h-screen max-w-7xl flex-col px-5 py-8 sm:px-6 lg:px-8">
-        <section className="grid flex-1 items-center gap-10 py-16 lg:grid-cols-[1.08fr_0.92fr] lg:py-20">
-          <div>
-            <p className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.28em] text-white/75 backdrop-blur-md">
-              OKMD Construction Management
+        <div className="relative mx-auto flex min-h-[calc(100vh-72px)] max-w-7xl items-center px-5 py-20 sm:px-6 lg:px-8">
+          <div className="max-w-2xl text-white">
+            <p className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-white/75 backdrop-blur-md">
+              {hero.eyebrow}
             </p>
 
-            <h1 className="mt-6 max-w-4xl text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
-              One project control center for visibility, progress and records.
+            <h1 className="mt-6 max-w-4xl text-4xl font-semibold tracking-[-0.04em] sm:text-6xl lg:text-7xl">
+              <span>{heroTitleText}</span>
+              {hasMonkeyEmoji ? (
+                <span className="mt-2 block whitespace-nowrap text-[0.78em] sm:text-[0.82em] lg:ml-4 lg:mt-0 lg:inline-block lg:align-baseline">
+                  {monkeyEmoji}
+                </span>
+              ) : null}
             </h1>
 
-            <p className="mt-5 max-w-2xl text-base leading-8 text-white/75 sm:text-lg">
-              ศูนย์กลางข้อมูลโครงการ OKMD สำหรับสื่อสารภาพรวม ติดตามความก้าวหน้า
-              ตรวจสอบต้นทุน และเก็บบันทึกภาพงานก่อสร้างอย่างเป็นระบบ
-            </p>
+            {hero.description ? (
+              <p className="mt-5 max-w-xl text-base leading-8 text-white/72 sm:text-lg">
+                {hero.description}
+              </p>
+            ) : null}
 
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/media"
-                className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-white/90"
+                href={hero.primaryAction.href}
+                className="rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white shadow-card transition hover:-translate-y-0.5 hover:opacity-90"
               >
-                View project records
+                {hero.primaryAction.label}
               </Link>
               <Link
-                href="/boq"
+                href={hero.secondaryAction.href}
                 className="rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
               >
-                Stakeholder workspace
+                {hero.secondaryAction.label}
               </Link>
             </div>
           </div>
+        </div>
+      </section>
 
-          <div className="rounded-3xl border border-white/15 bg-white/10 p-4 shadow-2xl backdrop-blur-xl sm:p-5">
-            <div className="grid gap-3">
-              {projectHighlights.map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-2xl border border-white/10 bg-black/25 p-4"
-                >
-                  <div className="text-xs uppercase tracking-[0.22em] text-white/45">
-                    {item.label}
+      <section
+        id="overview"
+        className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-6 md:grid-cols-[0.95fr_1.05fr] lg:px-8"
+      >
+        <div className="relative min-h-[320px] overflow-hidden rounded-[2rem] bg-surface-2 shadow-card">
+          <Image
+            src={overview.image}
+            alt={overview.title}
+            fill
+            className="object-cover"
+          />
+          <div className="absolute inset-0 hidden bg-gradient-to-t from-slate-950/35 to-transparent dark:block" />
+        </div>
+        <div className="flex flex-col justify-center">
+          <SectionHeading
+            eyebrow={overview.eyebrow}
+            title={overview.title}
+            description={overview.description}
+          />
+          <div className="mt-8 grid gap-3 sm:grid-cols-2">
+            {overview.facts.map((item) => (
+              <Card key={item.label} className="p-5">
+                <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                  {item.label}
+                </div>
+                <div className="mt-2 text-lg font-semibold text-foreground">
+                  {item.value}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="progress"
+        className="border-y border-border bg-surface/65 transition-colors duration-300"
+      >
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-6 md:grid-cols-[1.05fr_0.95fr] lg:px-8">
+          <div>
+            <SectionHeading
+              eyebrow={progress.eyebrow}
+              title={progress.title}
+              description={progress.description}
+            />
+            <Card className="mt-8 p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <div className="text-6xl font-semibold tracking-tight text-foreground">
+                    {progress.overall}%
                   </div>
-                  <div className="mt-2 text-xl font-semibold text-white">
-                    {item.value}
-                  </div>
-                  <div className="mt-1 text-sm leading-6 text-white/60">
-                    {item.detail}
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    {progress.updatedAt}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="border-t border-white/10 py-12">
-          <div className="max-w-3xl">
-            <p className="text-xs uppercase tracking-[0.25em] text-white/45">
-              Public website
-            </p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight">
-              Built for people who need the project story first.
-            </h2>
-            <p className="mt-4 text-sm leading-7 text-white/65 sm:text-base">
-              หน้าแรกนี้ทำหน้าที่อธิบายว่าโครงการคืออะไร อยู่ในสถานะใด
-              และมีข้อมูลสำคัญอะไรให้ติดตาม ก่อนพาผู้ใช้งานจริงเข้าสู่ workspace
-            </p>
-          </div>
-
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {publicSections.map((item) => (
-              <div
-                key={item.title}
-                className="rounded-3xl border border-white/12 bg-white/[0.07] p-5 backdrop-blur-md"
-              >
-                <h3 className="text-lg font-semibold">{item.title}</h3>
-                <p className="mt-3 text-sm leading-6 text-white/62">
-                  {item.description}
-                </p>
+                <div className="rounded-full border border-success/25 bg-success/10 px-4 py-2 text-sm font-semibold text-success">
+                  {progress.status}
+                </div>
               </div>
-            ))}
+              <div className="mt-8 grid gap-5">
+                <ProgressBar label="Plan" value={progress.plan} />
+                <ProgressBar label="Actual" value={progress.actual} />
+              </div>
+            </Card>
           </div>
-        </section>
-
-        <section className="border-t border-white/10 py-12">
-          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.25em] text-white/45">
-                Stakeholder workspace
-              </p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-tight">
-                Work modules
-              </h2>
-            </div>
-            <p className="max-w-md text-sm leading-6 text-white/55">
-              สำหรับผู้เกี่ยวข้องที่ต้องเข้าทำงานกับข้อมูลโครงการโดยตรง
-            </p>
+          <div className="relative min-h-[360px] overflow-hidden rounded-[2rem] bg-surface-2 shadow-card">
+            <Image
+              src={progress.image}
+              alt={progress.title}
+              fill
+              className="object-cover"
+            />
+            <div className="absolute inset-0 hidden bg-gradient-to-t from-slate-950/35 to-transparent dark:block" />
           </div>
+        </div>
+      </section>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            {stakeholderModules.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="group rounded-3xl border border-white/15 bg-white/10 p-5 backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white/15"
+      <section
+        id="timelapse"
+        className="mx-auto grid max-w-7xl gap-10 px-5 py-16 sm:px-6 md:grid-cols-[0.95fr_1.05fr] lg:px-8"
+      >
+        <div className="relative aspect-video overflow-hidden rounded-[2rem] bg-surface-2 shadow-card">
+          <Image
+            src={timelapse.image}
+            alt={timelapse.title}
+            fill
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 to-transparent" />
+          <div className="absolute bottom-5 left-5 rounded-full bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-card">
+            Latest video
+          </div>
+        </div>
+        <div className="flex flex-col justify-center">
+          <SectionHeading
+            eyebrow={timelapse.eyebrow}
+            title={timelapse.title}
+            description={timelapse.description}
+          />
+          <div className="mt-8">
+            <Link
+              href={timelapse.href}
+              className="inline-flex rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white shadow-card transition hover:-translate-y-0.5 hover:opacity-90"
+            >
+              {timelapse.buttonLabel}
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="news"
+        className="border-t border-border bg-surface/65 transition-colors duration-300"
+      >
+        <div className="mx-auto max-w-7xl px-5 py-16 sm:px-6 lg:px-8">
+          <SectionHeading eyebrow={news.eyebrow} title={news.title} />
+          <div className="mt-8 grid gap-5 md:grid-cols-3">
+            {news.items.map((item) => (
+              <article
+                key={item.title}
+                className="overflow-hidden rounded-[2rem] border border-border bg-surface shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-card-lg"
               >
-                <div className="text-lg font-semibold">{item.title}</div>
-                <p className="mt-3 min-h-12 text-sm leading-6 text-white/65">
-                  {item.description}
-                </p>
-                <div className="mt-5 text-sm font-medium text-white/85">
-                  Open{" "}
-                  <span className="inline-block transition group-hover:translate-x-1">
-                    →
-                  </span>
+                <div className="relative aspect-[4/3] bg-surface-2">
+                  <Image
+                    src={item.image}
+                    alt={item.title}
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 hidden bg-gradient-to-t from-slate-950/35 to-transparent dark:block" />
                 </div>
-              </Link>
+                <div className="p-5">
+                  <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                    {item.date}
+                  </div>
+                  <h3 className="mt-3 text-lg font-semibold text-foreground">
+                    {item.title}
+                  </h3>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                    {item.description}
+                  </p>
+                </div>
+              </article>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        <footer className="border-t border-white/10 py-6 text-xs text-white/45">
-          © {new Date().getFullYear()} {APP_NAME} CM • Public Website Phase
-        </footer>
-      </div>
+      <footer className="border-t border-border bg-surface-3 px-5 py-8 text-sm text-muted-foreground">
+        <div className="mx-auto flex max-w-7xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            © {new Date().getFullYear()} {APP_NAME} CM
+          </span>
+          <span>Theme-ready Landing Page</span>
+        </div>
+      </footer>
     </main>
   );
 }

@@ -1,2 +1,0 @@
-project_name="KAMUi"
-reset_pwd_comfirm_text="RESET"

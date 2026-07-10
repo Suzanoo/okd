@@ -12,8 +12,11 @@ export default function ThemeProvider({
 
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === "dark") root.classList.add("dark");
-    else root.classList.remove("dark");
+    const isDark = theme === "dark";
+
+    root.classList.toggle("dark", isDark);
+    root.dataset.theme = theme;
+    root.style.colorScheme = isDark ? "dark" : "light";
 
     localStorage.setItem("okmd_theme_mode", theme);
   }, [theme]);
