@@ -1,110 +1,205 @@
-# 🚂 KAMUi Construction Dashboard
+# 🚧 OKD CM
 
-Web-based dashboard for construction project management\
-Built with Next.js + Supabase
+> **Modern Construction Management Platform**  
+> Built with **Next.js**, **Supabase**, and **Tailwind CSS**.
 
-------------------------------------------------------------------------
+<p align="center">
 
-## ✨ Features
+![Next.js](https://img.shields.io/badge/Next.js-15-black)
+![React](https://img.shields.io/badge/React-19-61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38BDF8)
+![Supabase](https://img.shields.io/badge/Supabase-Auth-3ECF8E)
+![Vercel](https://img.shields.io/badge/Vercel-Deployed-black)
 
--   📊 BOQ Upload & Analysis (Excel)
--   🧩 Cascading WBS Filter (WBS1 → WBS4)
--   📈 S-Curve (Plan vs Actual)
--   📅 Cut-off Date Reporting
--   📋 KPI Summary Dashboard
--   🎬 Media Page (Project Timelapse)
--   🔐 Authentication (Supabase)
+</p>
 
-------------------------------------------------------------------------
+---
 
-## 🏗 Tech Stack
+# 📖 Overview
 
--   **Frontend**: Next.js (App Router) + TypeScript\
--   **Styling**: TailwindCSS\
--   **State Management**: Zustand\
--   **Charts**: Recharts\
--   **Backend**: Supabase\
--   **Database**: PostgreSQL\
--   **Deployment**: Vercel
+OKD CM is a modern web platform for managing construction projects.
 
-------------------------------------------------------------------------
+It provides a centralized workspace for:
 
-## 📂 Project Structure
+- 📊 BOQ Analysis
+- 📈 Construction Progress
+- 📋 Project Reports
+- 🎬 Media & Timelapse
+- 📁 Document Management
+- 🔐 Secure Authentication
 
-    app/
-    _components/
-    lib/
-    public/
-    package.json
-    tsconfig.json
-    next.config.js
+Designed for desktop and mobile with full Light / Dark theme support.
 
-------------------------------------------------------------------------
+---
 
-## 🚀 Local Development
+# ✨ Features
 
-### 1️⃣ Install dependencies
+## 🏠 Dashboard
 
-``` bash
-pnpm install
+- 🌗 Light / Dark Mode
+- 🎨 Theme Palette
+- 📱 Responsive Design
+- ⚡ Modern Landing Page
+
+---
+
+## 📊 BOQ Module
+
+- 📂 Upload Excel BOQ
+- 📑 Description Summary
+- 🏗 Multi-level WBS Analysis
+- 📉 Interactive Charts
+- 🔎 Keyword Search
+- 📤 CSV Export
+
+---
+
+## 📈 Progress Module
+
+- 📂 Upload Progress Data
+- 📊 KPI Dashboard
+- 📈 S-Curve Chart
+- 📋 Progress Table
+- 📅 Weekly Progress
+
+---
+
+## 🔐 Authentication
+
+- 🔑 Supabase Authentication
+- 🛡 Protected Routes
+- 💾 Session Persistence
+
+---
+
+# 🛠 Tech Stack
+
+| Category | Technology |
+|-----------|------------|
+| ⚛ Framework | Next.js 15 |
+| 💙 Language | TypeScript |
+| 🎨 UI | Tailwind CSS v4 |
+| 📊 Charts | Recharts |
+| 🔐 Backend | Supabase |
+| ☁ Deployment | Vercel |
+
+---
+
+# 📂 Project Structure
+
+```text
+app/
+├── (protected)
+├── _components
+├── api
+
+config/
+lib/
+public/
+types/
 ```
 
-### 2️⃣ Create environment file
+---
 
-Create `.env.local`
+# 🚀 Getting Started
 
-``` env
+### 1️⃣ Clone Repository
+
+```bash
+git clone https://github.com/Suzanoo/okd.git
+```
+
+### 2️⃣ Install Packages
+
+```bash
+npm install
+```
+
+### 3️⃣ Create Environment File
+
+```env
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
-### 3️⃣ Run development server
+### 4️⃣ Start Development Server
 
-``` bash
-pnpm dev
+```bash
+npm run dev
 ```
 
-Open:
+Open
 
+```
 http://localhost:3000
+```
 
-------------------------------------------------------------------------
+---
 
-## 🌍 Deployment
+# ☁ Deployment
 
-Recommended: **Vercel**
+Build locally
 
-1.  Push repository to GitHub\
-2.  Connect project in Vercel\
-3.  Add Environment Variables\
-4.  Deploy
+```bash
+npm run build
+```
 
-------------------------------------------------------------------------
+Deploy using **Vercel**
 
-## 📊 Core Modules
+---
 
--   `/boq` → BOQ analysis
--   `/report` → Project reporting
--   `/media` → Timelapse videos
--   `/admin` → Admin tools (if enabled)
+# 🗺 Roadmap
 
-------------------------------------------------------------------------
+## ✅ Completed
 
-## 🔐 Security
+- ✅ Landing Page
+- ✅ Authentication
+- ✅ BOQ Dashboard
+- ✅ Progress Dashboard
+- ✅ Theme System
 
--   Supabase Authentication
--   Environment variables stored securely
--   Database managed via Supabase
+## 🚧 In Progress
 
-------------------------------------------------------------------------
+- 🚧 Report Dashboard
+- 🚧 Media Management
+- 🚧 Document Center
 
-## 📦 Version
+## 🔮 Future
 
-**v1.0**
+- 🤖 AI Assistant
+- 📄 PDF Reports
+- 📊 Analytics Dashboard
+- 🔔 Notifications
 
-------------------------------------------------------------------------
+---
 
-## 👷 Author
+# 📸 Screenshots
 
-OKMD Construction Dashboard\
-Built for internal project management
+## 🏠 Landing
+
+> *(Coming Soon)*
+
+## 📊 BOQ
+
+> *(Coming Soon)*
+
+## 📈 Progress
+
+> *(Coming Soon)*
+
+---
+
+# 🤝 Contributing
+
+This is currently a private project.
+
+Suggestions and improvements are always welcome.
+
+---
+
+# 📜 License
+
+Private Repository
+
+Copyright © OKd
