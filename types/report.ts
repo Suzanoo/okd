@@ -42,5 +42,6 @@ export type ActivityTableRow = {
   activity: string
   amount: number
   type: ActivityType
+  total: number
   progress: number
 }
