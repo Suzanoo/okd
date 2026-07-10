@@ -178,13 +178,13 @@ export default function AppHeaderClient({ user }: Props) {
           role="dialog"
           aria-modal="true"
           className={[
-            "fixed right-0 top-0 z-50 h-dvh w-[85vw] max-w-xs pt-[env(safe-area-inset-top)]",
+            "fixed right-0 top-0 z-50 flex h-dvh w-[85vw] max-w-xs flex-col pt-[env(safe-area-inset-top)]",
             "border-l border-white/15 bg-gradient-to-b from-zinc-900/95 to-black/95 shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl",
             "transition-transform duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]",
             open ? "translate-x-0" : "translate-x-full",
           ].join(" ")}
         >
-          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+          <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
             <div className="flex min-w-0 items-center gap-3">
               <Image
                 src={APP_LOGO}
@@ -211,47 +211,49 @@ export default function AppHeaderClient({ user }: Props) {
             </button>
           </div>
 
-          <nav className="flex h-[calc(100dvh-76px-env(safe-area-inset-top))] flex-col px-3 py-3">
-            <ul className="flex flex-col gap-1">
-              {nav.map((item, idx) => {
-                const active = isActive(item.href);
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      onClick={() => setOpen(false)}
-                      ref={idx === 0 ? firstLinkRef : undefined}
-                      className={[
-                        "flex items-center justify-between rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-white/20",
-                        active
-                          ? "bg-white/14 text-white"
-                          : "bg-white/[0.03] text-white/85 hover:bg-white/10 hover:text-white",
-                      ].join(" ")}
-                    >
-                      <span>{item.label}</span>
-                      {active ? (
-                        <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                      ) : null}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+          <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+            <nav aria-label="Mobile navigation">
+              <ul className="flex flex-col gap-1">
+                {nav.map((item, idx) => {
+                  const active = isActive(item.href);
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        onClick={() => setOpen(false)}
+                        ref={idx === 0 ? firstLinkRef : undefined}
+                        className={[
+                          "flex items-center justify-between rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-white/20",
+                          active
+                            ? "bg-white/14 text-white"
+                            : "bg-white/[0.03] text-white/85 hover:bg-white/10 hover:text-white",
+                        ].join(" ")}
+                      >
+                        <span>{item.label}</span>
+                        {active ? (
+                          <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                        ) : null}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
 
-            <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-2">
-              <a
-                href="https://www.okmd.or.th/"
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium text-white/85 transition hover:bg-white/10 hover:text-white"
-              >
-                <span>OKMD Website</span>
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            </div>
+              <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-2">
+                <a
+                  href="https://www.okmd.or.th/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium text-white/85 transition hover:bg-white/10 hover:text-white"
+                >
+                  <span>OKMD Website</span>
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              </div>
+            </nav>
+          </div>
 
-            <div className="flex-1" />
-
+          <div className="shrink-0 border-t border-white/10 bg-black/25 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
             <div className="rounded-2xl border border-white/10 bg-white/5 p-2">
               {user ? (
                 <LogoutButton
@@ -268,7 +270,7 @@ export default function AppHeaderClient({ user }: Props) {
                 </Link>
               )}
             </div>
-          </nav>
+          </div>
         </aside>
       </div>
     </header>

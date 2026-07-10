@@ -14,32 +14,186 @@ function formatProgress(value: number) {
   return `${value.toFixed(1)}%`;
 }
 
+function clampProgress(value: number) {
+  return Math.min(Math.max(value, 0), 100);
+}
+
+type ActivityGroup = {
+  key: string;
+  wbs: string;
+  activity: string;
+  total: number;
+  plan?: ActivityTableRow;
+  actual?: ActivityTableRow;
+};
+
+function groupActivities(data: ActivityTableRow[]): ActivityGroup[] {
+  const groups = new Map<string, ActivityGroup>();
+
+  data.forEach((row, index) => {
+    const key = `${row.wbs}::${row.activity}`;
+    const existing = groups.get(key);
+
+    const group =
+      existing ??
+      ({
+        key: `${key}::${index}`,
+        wbs: row.wbs,
+        activity: row.activity,
+        total: row.total,
+      } satisfies ActivityGroup);
+
+    if (row.type === "P") {
+      group.plan = row;
+      group.total = row.total;
+    } else {
+      group.actual = row;
+    }
+
+    if (!existing) groups.set(key, group);
+  });
+
+  return Array.from(groups.values());
+}
+
+function ProgressBar({
+  value,
+  tone,
+}: {
+  value: number;
+  tone: "plan" | "actual";
+}) {
+  const width = clampProgress(value);
+  const isPlan = tone === "plan";
+
+  return (
+    <div className="flex items-center gap-3">
+      <div className="h-2 flex-1 overflow-hidden rounded-full bg-border">
+        <div
+          className={[
+            "h-full rounded-full",
+            isPlan ? "bg-blue-500" : "bg-emerald-500",
+          ].join(" ")}
+          style={{
+            width: `${width}%`,
+            minWidth: value > 0 ? "3px" : "0",
+          }}
+        />
+      </div>
+
+      <span
+        className={[
+          "w-14 text-right text-sm font-semibold tabular-nums",
+          isPlan ? "text-accent" : "text-success",
+        ].join(" ")}
+      >
+        {formatProgress(value)}
+      </span>
+    </div>
+  );
+}
+
+function MobileProgressRow({
+  label,
+  row,
+  tone,
+}: {
+  label: string;
+  row?: ActivityTableRow;
+  tone: "plan" | "actual";
+}) {
+  const isPlan = tone === "plan";
+  const amount = row?.amount ?? 0;
+  const progress = row?.progress ?? 0;
+
+  return (
+    <div className="rounded-2xl border border-border bg-surface-2/55 p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <span
+          className={[
+            "rounded-full px-3 py-1 text-xs font-bold",
+            isPlan
+              ? "bg-blue-500/15 text-accent"
+              : "bg-emerald-500/15 text-success",
+          ].join(" ")}
+        >
+          {label}
+        </span>
+
+        <span className="text-sm font-semibold tabular-nums text-foreground">
+          {formatMoney(amount)}
+        </span>
+      </div>
+
+      <ProgressBar value={progress} tone={tone} />
+    </div>
+  );
+}
+
 export function ActivityTable({ data }: { data: ActivityTableRow[] }) {
+  const activityGroups = groupActivities(data);
+
   return (
     <section className="mt-6 overflow-hidden rounded-3xl border border-border bg-surface shadow-card-lg">
-      <div className="border-b border-border p-5">
+      <div className="border-b border-border p-5 sm:p-6">
         <h2 className="text-xl font-bold">Activity Progress</h2>
 
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">
           Progress and amount are calculated from weekly values up to the
           selected cutoff date.
         </p>
       </div>
 
-      <div className="max-h-[520px] overflow-auto">
+      {/* Mobile: one activity per card */}
+      <div className="space-y-4 p-4 md:hidden">
+        {activityGroups.map((group) => (
+          <article
+            key={group.key}
+            className="overflow-hidden rounded-2xl border border-border bg-background/45 shadow-sm"
+          >
+            <div className="border-b border-border p-4">
+              <div className="flex items-start gap-3">
+                <span className="shrink-0 rounded-lg bg-surface-2 px-2.5 py-1 text-xs font-bold text-muted-foreground">
+                  {group.wbs}
+                </span>
+
+                <h3 className="min-w-0 text-base font-semibold leading-6 text-foreground">
+                  {group.activity}
+                </h3>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between gap-4 rounded-xl bg-surface-2/65 px-3 py-2.5">
+                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                  Total
+                </span>
+                <span className="text-sm font-bold tabular-nums text-foreground">
+                  {formatMoney(group.total)}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-3 p-4">
+              <MobileProgressRow label="Plan" row={group.plan} tone="plan" />
+              <MobileProgressRow
+                label="Actual"
+                row={group.actual}
+                tone="actual"
+              />
+            </div>
+          </article>
+        ))}
+      </div>
+
+      {/* Desktop/tablet: full table */}
+      <div className="hidden max-h-[520px] overflow-auto md:block">
         <table className="w-full min-w-[980px] text-left text-sm">
           <thead className="sticky top-0 z-10 bg-surface-2 text-muted-foreground">
             <tr>
               <th className="px-5 py-4">WBS</th>
-
               <th className="px-5 py-4">Activity</th>
-
               <th className="px-5 py-4">Type</th>
-
               <th className="px-5 py-4 text-right">Total</th>
-
               <th className="px-5 py-4 text-right">Amount</th>
-
               <th className="px-5 py-4">Progress</th>
             </tr>
           </thead>
@@ -54,8 +208,6 @@ export function ActivityTable({ data }: { data: ActivityTableRow[] }) {
                 previous.activity === row.activity;
 
               const isPlan = row.type === "P";
-
-              const progressBarWidth = Math.min(Math.max(row.progress, 0), 100);
 
               return (
                 <tr
@@ -98,28 +250,11 @@ export function ActivityTable({ data }: { data: ActivityTableRow[] }) {
                   </td>
 
                   <td className="px-5 py-4">
-                    <div className="flex min-w-[220px] items-center gap-3">
-                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-border">
-                        <div
-                          className={[
-                            "h-full rounded-full",
-                            isPlan ? "bg-blue-500" : "bg-emerald-500",
-                          ].join(" ")}
-                          style={{
-                            width: `${progressBarWidth}%`,
-                            minWidth: row.progress > 0 ? "3px" : "0",
-                          }}
-                        />
-                      </div>
-
-                      <span
-                        className={[
-                          "w-16 text-right font-semibold tabular-nums",
-                          isPlan ? "text-accent" : "text-success",
-                        ].join(" ")}
-                      >
-                        {formatProgress(row.progress)}
-                      </span>
+                    <div className="min-w-[220px]">
+                      <ProgressBar
+                        value={row.progress}
+                        tone={isPlan ? "plan" : "actual"}
+                      />
                     </div>
                   </td>
                 </tr>
