@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { SiLinktree } from "react-icons/si";
 
 import { APP_NAME } from "@/config/app.config";
 import { siteConfig } from "@/config/site.config";
@@ -289,7 +290,18 @@ export default function HomePage() {
           <span>
             © {new Date().getFullYear()} {APP_NAME} CM
           </span>
-          <span>Theme-ready Landing Page</span>
+
+          <div className="flex items-center gap-4">
+            <a
+              href="https://linktr.ee/muxentrain"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 transition-colors hover:text-foreground"
+            >
+              <SiLinktree className="h-4 w-4 text-green-500" />
+              <span>muxentrain</span>
+            </a>
+          </div>
         </div>
       </footer>
     </main>
