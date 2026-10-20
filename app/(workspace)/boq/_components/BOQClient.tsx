@@ -1,182 +1,61 @@
 "use client";
 
 import { APP_NAME } from "@/config/app.config";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { BoqRow } from "@/lib/boq/types";
-import {
-  fetchWorkbookBuffer,
-  getValidSheetsFromBuffer,
-  parseBoqRowsFromBuffer,
-} from "@/lib/boq/boqParse";
-import { filterRows, sumBy } from "@/lib/boq/boqTransform";
-
-import BoqSourcePicker from "./controls/BoqSourcePicker";
-import SheetPicker from "./controls/SheetPicker";
+import { useMemo } from "react";
+import { useBoqSession, useBoqState } from "@/app/_providers/BoqSessionProvider";
+import BoqWorkspaceSource from "@/app/_components/BoqWorkspaceSource";
+import { sumBy } from "@/lib/boq/boqTransform";
+import { filterViewerRows } from "@/lib/boq/session";
 import PieAmountCard from "./cards/PieAmountCard";
 import BarAmountCard from "./cards/BarAmountCard";
 import WBSSelect from "./controls/WBSSelect";
-import QuerySection from "./QuerySection";
-
-const DEFAULT_BOQ_PATH = "/boq/example_boq.xlsx";
-const DEFAULT_BOQ_NAME = "example_boq.xlsx";
-
-type SourceType = "default" | "upload";
+import ViewerRows from "./ViewerRows";
+import ViewerTree from "./ViewerTree";
 
 export default function BOQClient() {
-  const [sourceType, setSourceType] = useState<SourceType>("default");
-  const [sourceName, setSourceName] = useState(DEFAULT_BOQ_NAME);
-
-  const [buf, setBuf] = useState<ArrayBuffer | null>(null);
-  const [validSheets, setValidSheets] = useState<string[]>([]);
-  const [selectedSheet, setSelectedSheet] = useState("");
-
-  const [rows, setRows] = useState<BoqRow[]>([]);
-
-  const [wbs1, setWbs1] = useState<string | null>(null);
-  const [wbs2, setWbs2] = useState<string | null>(null);
-  const [wbs3, setWbs3] = useState<string | null>(null);
-  const [wbs4, setWbs4] = useState<string | null>(null);
-
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
-
-  const resetCascade = useCallback(() => {
-    setWbs1(null);
-    setWbs2(null);
-    setWbs3(null);
-    setWbs4(null);
-  }, []);
-
-  const resetWorkbookState = useCallback(() => {
-    setBuf(null);
-    setRows([]);
-    setValidSheets([]);
-    setSelectedSheet("");
-    resetCascade();
-  }, [resetCascade]);
-
-  const applyWorkbookBuffer = useCallback(async (b: ArrayBuffer) => {
-    const sheets = await getValidSheetsFromBuffer(b);
-
-    setBuf(b);
-    setValidSheets(sheets);
-    setSelectedSheet(sheets[0] ?? "");
-
-    if (sheets.length === 0) {
-      setErrorMsg("ไม่พบ sheet ที่มี columns ครบตามที่กำหนด");
-    }
-  }, []);
-
-  const loadDefaultWorkbook = useCallback(async () => {
-    setIsLoading(true);
-    setErrorMsg("");
-    setSourceType("default");
-    setSourceName(DEFAULT_BOQ_NAME);
-    resetWorkbookState();
-
-    try {
-      const b = await fetchWorkbookBuffer(DEFAULT_BOQ_PATH);
-      await applyWorkbookBuffer(b);
-    } catch (e) {
-      setErrorMsg(e instanceof Error ? e.message : "โหลดไฟล์ BOQ ไม่สำเร็จ");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [applyWorkbookBuffer, resetWorkbookState]);
-
-  const loadUploadedWorkbook = useCallback(
-    async (file: File) => {
-      setIsLoading(true);
-      setErrorMsg("");
-      setSourceType("upload");
-      setSourceName(file.name);
-      resetWorkbookState();
-
-      try {
-        const b = await file.arrayBuffer();
-        await applyWorkbookBuffer(b);
-      } catch (e) {
-        setErrorMsg(e instanceof Error ? e.message : "อ่านไฟล์ BOQ ไม่สำเร็จ");
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [applyWorkbookBuffer, resetWorkbookState],
-  );
-
-  // Load default file once when BOQ page opens.
-  useEffect(() => {
-    loadDefaultWorkbook();
-  }, [loadDefaultWorkbook]);
-
-  useEffect(() => {
-    if (!buf || !selectedSheet) return;
-
-    const b = buf;
-    const sheet = selectedSheet;
-    let cancelled = false;
-
-    async function parseSheet() {
-      setIsLoading(true);
-      setErrorMsg("");
-      resetCascade();
-
-      try {
-        await new Promise<void>((r) => requestAnimationFrame(() => r()));
-        const parsed = await parseBoqRowsFromBuffer(b, sheet);
-
-        if (!cancelled) setRows(parsed);
-      } catch (e) {
-        if (!cancelled) {
-          setRows([]);
-          setErrorMsg(e instanceof Error ? e.message : "Parse error");
-        }
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
-    parseSheet();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [buf, selectedSheet, resetCascade]);
-
+  const state = useBoqState(), session = useBoqSession();
+  const { rows, sourceName, sheet: selectedSheet, loading: isLoading, viewerPath } = state;
+  const [wbs1,wbs2,wbs3,wbs4] = viewerPath;
+  const resetCascade = () => session.setViewerPath([null,null,null,null]);
+  const select = (level: number, value: string | null) => session.setViewerPath(viewerPath.map((v,i) => i < level ? v : i === level ? value : null));
+  const setWBS1 = (v: string | null) => select(0,v);
+  const setWBS2 = (v: string | null) => select(1,v);
+  const setWBS3 = (v: string | null) => select(2,v);
+  const setWBS4 = (v: string | null) => select(3,v);
   const rowsWBS1 = useMemo(() => rows, [rows]);
-  const rowsWBS2 = useMemo(() => filterRows(rows, { wbs1 }), [rows, wbs1]);
+  const rowsWBS2 = useMemo(() => filterViewerRows(rows, [wbs1,null,null,null]), [rows, wbs1]);
   const rowsWBS3 = useMemo(
-    () => filterRows(rows, { wbs1, wbs2 }),
+    () => filterViewerRows(rows, [wbs1,wbs2,null,null]),
     [rows, wbs1, wbs2],
   );
   const rowsWBS4 = useMemo(
-    () => filterRows(rows, { wbs1, wbs2, wbs3 }),
+    () => filterViewerRows(rows, [wbs1,wbs2,wbs3,null]),
     [rows, wbs1, wbs2, wbs3],
   );
   const rowsDesc = useMemo(
-    () => filterRows(rows, { wbs1, wbs2, wbs3, wbs4 }),
-    [rows, wbs1, wbs2, wbs3, wbs4],
+    () => filterViewerRows(rows, viewerPath),
+    [rows, viewerPath],
   );
 
   const pieWBS1 = useMemo(() => sumBy(rowsWBS1, (r) => r.wbs1), [rowsWBS1]);
 
   const barWBS2 = useMemo(() => {
-    if (!wbs1) return [];
+    if (wbs1 === null) return [];
     return sumBy(rowsWBS2, (r) => r.wbs2);
   }, [rowsWBS2, wbs1]);
 
   const barWBS3 = useMemo(() => {
-    if (!wbs1 || !wbs2) return [];
+    if (wbs1 === null || wbs2 === null) return [];
     return sumBy(rowsWBS3, (r) => r.wbs3);
   }, [rowsWBS3, wbs1, wbs2]);
 
   const barWBS4 = useMemo(() => {
-    if (!wbs1 || !wbs2 || !wbs3) return [];
+    if (wbs1 === null || wbs2 === null || wbs3 === null) return [];
     return sumBy(rowsWBS4, (r) => r.wbs4);
   }, [rowsWBS4, wbs1, wbs2, wbs3]);
 
   const barDesc = useMemo(() => {
-    if (!wbs1 || !wbs2 || !wbs3 || !wbs4) return [];
+    if (wbs1 === null || wbs2 === null || wbs3 === null || wbs4 === null) return [];
     return sumBy(rowsDesc, (r) => r.description);
   }, [rowsDesc, wbs1, wbs2, wbs3, wbs4]);
 
@@ -184,28 +63,6 @@ export default function BOQClient() {
   const wbs2Options = useMemo(() => barWBS2.map((d) => d.name), [barWBS2]);
   const wbs3Options = useMemo(() => barWBS3.map((d) => d.name), [barWBS3]);
   const wbs4Options = useMemo(() => barWBS4.map((d) => d.name), [barWBS4]);
-
-  const setWBS1 = (v: string | null) => {
-    setWbs1(v);
-    setWbs2(null);
-    setWbs3(null);
-    setWbs4(null);
-  };
-
-  const setWBS2 = (v: string | null) => {
-    setWbs2(v);
-    setWbs3(null);
-    setWbs4(null);
-  };
-
-  const setWBS3 = (v: string | null) => {
-    setWbs3(v);
-    setWbs4(null);
-  };
-
-  const setWBS4 = (v: string | null) => {
-    setWbs4(v);
-  };
 
   const C_WBS2 = "hsl(217 91% 60%)";
   const C_WBS3 = "hsl(160 84% 39%)";
@@ -225,7 +82,7 @@ export default function BOQClient() {
     "rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1 text-xs text-[color:var(--color-foreground)] transition hover:opacity-90";
 
   return (
-    <div className="min-h-screen bg-[color:var(--color-background)]">
+    <main className="min-h-screen bg-[color:var(--color-background)]">
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6">
         <header className={`${cardBase} ${cardPad}`}>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -233,7 +90,7 @@ export default function BOQClient() {
               <p className={`text-xs font-medium ${muted}`}>
                 {APP_NAME} • Construction Management
               </p>
-              <h1 className={`text-2xl font-semibold ${fg}`}>BOQ Dashboard</h1>
+              <h1 className={`text-2xl font-semibold ${fg}`}>BOQ Viewer</h1>
               <p className={`mt-1 text-sm ${muted}`}>
                 Budget structure overview → drill down by WBS
               </p>
@@ -252,37 +109,9 @@ export default function BOQClient() {
           </div>
         </header>
 
-        <BoqSourcePicker
-          sourceType={sourceType}
-          sourceName={sourceName}
-          defaultName={DEFAULT_BOQ_NAME}
-          isLoading={isLoading}
-          onUseDefault={loadDefaultWorkbook}
-          onUpload={loadUploadedWorkbook}
-        />
-
-        <SheetPicker
-          sheets={validSheets}
-          value={selectedSheet}
-          onChange={setSelectedSheet}
-          disabled={isLoading || validSheets.length === 0}
-        />
-
-        {isLoading ? (
-          <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4 text-sm shadow-[var(--shadow-card)]">
-            <span className={muted}>Loading BOQ… </span>
-            <span className="font-mono text-[color:var(--color-foreground)]/90">
-              {sourceType === "default" ? DEFAULT_BOQ_PATH : sourceName}
-            </span>
-          </div>
-        ) : null}
-
-        {errorMsg ? (
-          <div className="rounded-2xl border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-200">
-            {errorMsg}
-          </div>
-        ) : null}
-
+        <BoqWorkspaceSource />
+        {selectedSheet && !isLoading && <>
+        <ViewerTree rows={rows} path={viewerPath} onSelect={session.setViewerPath} />
         <section className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4 shadow-[var(--shadow-card)]">
           <div className={`text-xs ${muted}`}>Current filter</div>
 
@@ -324,7 +153,7 @@ export default function BOQClient() {
             }
             data={barWBS2}
             color={C_WBS2}
-            disabled={!wbs1}
+            disabled={wbs1 === null}
             disabledHint="เลือก WBS-1 ก่อน เพื่อแสดง Bar ของ WBS-2"
             topControl={
               <WBSSelect
@@ -348,7 +177,7 @@ export default function BOQClient() {
             }
             data={barWBS3}
             color={C_WBS3}
-            disabled={!wbs1 || !wbs2}
+            disabled={wbs1 === null || wbs2 === null}
             disabledHint="เลือก WBS-1 และ WBS-2 ก่อน เพื่อแสดง Bar ของ WBS-3"
             topControl={
               <WBSSelect
@@ -357,7 +186,7 @@ export default function BOQClient() {
                 options={wbs2Options}
                 placeholder="(Choose WBS-2)"
                 onChange={setWBS2}
-                disabled={!wbs1 || isLoading || wbs2Options.length === 0}
+                disabled={wbs1 === null || isLoading || wbs2Options.length === 0}
               />
             }
             onSelect={(name) => setWBS3(name)}
@@ -370,7 +199,7 @@ export default function BOQClient() {
             }
             data={barWBS4}
             color={C_WBS4}
-            disabled={!wbs1 || !wbs2 || !wbs3}
+            disabled={wbs1 === null || wbs2 === null || wbs3 === null}
             disabledHint="เลือก WBS-1, WBS-2, WBS-3 ก่อน เพื่อแสดง Bar ของ WBS-4"
             topControl={
               <WBSSelect
@@ -379,7 +208,7 @@ export default function BOQClient() {
                 options={wbs3Options}
                 placeholder="(Choose WBS-3)"
                 onChange={setWBS3}
-                disabled={!wbs2 || isLoading || wbs3Options.length === 0}
+                disabled={wbs2 === null || isLoading || wbs3Options.length === 0}
               />
             }
             onSelect={(name) => setWBS4(name)}
@@ -393,7 +222,7 @@ export default function BOQClient() {
             data={barDesc}
             color={C_DESC}
             height={300}
-            disabled={!wbs1 || !wbs2 || !wbs3 || !wbs4}
+            disabled={wbs1 === null || wbs2 === null || wbs3 === null || wbs4 === null}
             disabledHint="เลือก WBS-1 → WBS-2 → WBS-3 → WBS-4 ก่อน เพื่อแสดง Description"
             topControl={
               <WBSSelect
@@ -402,14 +231,15 @@ export default function BOQClient() {
                 options={wbs4Options}
                 placeholder="(Choose WBS-4)"
                 onChange={setWBS4}
-                disabled={!wbs3 || isLoading || wbs4Options.length === 0}
+                disabled={wbs3 === null || isLoading || wbs4Options.length === 0}
               />
             }
           />
         </section>
 
-        <QuerySection rows={rows} />
+        <ViewerRows rows={rowsDesc} />
+        </> }
       </div>
-    </div>
+    </main>
   );
 }

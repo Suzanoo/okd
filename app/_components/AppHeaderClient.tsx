@@ -19,6 +19,7 @@ const publicNav = [
 
 const stakeholderNav = [
   { href: "/boq", label: "BOQ" },
+  { href: "/query", label: "QUERY" },
   { href: "/report", label: "REPORT" },
   { href: "/media", label: "MEDIA" },
 ];

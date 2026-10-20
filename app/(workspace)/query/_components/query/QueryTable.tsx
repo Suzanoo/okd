@@ -193,6 +193,7 @@ export default function QueryTable({
               return (
                 <tr
                   key={r._id}
+                  data-row-id={r._id}
                   className={`${rowBase} ${pending ? pendingRowCls : ""}`}
                 >
                   <td className={td}>{r.wbs1}</td>

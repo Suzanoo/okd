@@ -50,10 +50,16 @@ export async function fetchWorkbookBuffer(publicPath: string): Promise<ArrayBuff
 }
 
 export async function getValidSheetsFromBuffer(buf: ArrayBuffer) {
+  return (await loadBoqWorkbook(buf)).sheets;
+}
+
+/** One binary parse per selection; sheets are converted once, on demand. */
+export async function loadBoqWorkbook(buf: ArrayBuffer) {
   const XLSX = await getXLSX();
   const wb = XLSX.read(buf, { type: "array" });
+  const cache = new Map<string, BoqRow[]>();
 
-  return wb.SheetNames.filter((name) => {
+  const sheets = wb.SheetNames.filter((name) => {
     const ws = wb.Sheets[name];
     const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, {
       header: 1,
@@ -66,6 +72,14 @@ export async function getValidSheetsFromBuffer(buf: ArrayBuffer) {
 
     return REQUIRED_COLUMNS.every((c) => headers.includes(c));
   });
+  return {
+    sheets,
+    rowsForSheet(name: string) {
+      if (!sheets.includes(name)) throw new Error("This sheet does not have the required BOQ columns.");
+      if (!cache.has(name)) cache.set(name, parseBoqSheet(XLSX, wb.Sheets[name]));
+      return cache.get(name)!;
+    },
+  };
 }
 
 export async function parseBoqRowsFromBuffer(
@@ -76,6 +90,10 @@ export async function parseBoqRowsFromBuffer(
   const wb = XLSX.read(buf, { type: "array" });
   const ws = wb.Sheets[sheetName];
   if (!ws) return [];
+  return parseBoqSheet(XLSX, ws);
+}
+
+function parseBoqSheet(XLSX: typeof XLSXType, ws: XLSXType.WorkSheet): BoqRow[] {
 
   const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, {
     header: 1,

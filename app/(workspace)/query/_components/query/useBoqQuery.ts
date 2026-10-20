@@ -1,67 +1,40 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import type { BoqRow } from "@/lib/boq/types";
+import { useCallback, useMemo } from "react";
+import type { SessionRow } from "@/lib/boq/session";
+import { useQueryState } from "@/app/_providers/BoqSessionProvider";
 import {
   buildDescriptionRegex,
   filterByDescription,
-  type MatchMode,
 } from "@/lib/boq/query";
 
-const DEFAULT_LIMIT = 200;
-
 /** WorkingRow = row หลัง search + _id สำหรับ key/staging */
-export type WorkingRow = BoqRow & { _id: string };
+export type WorkingRow = SessionRow;
 
-type Options = {
-  /** default limit for initial render (Top N) */
-  defaultLimit?: number;
-};
-
-/** สร้าง id แบบ deterministic (มี index กันชนกรณี row ซ้ำ) */
-function makeRowId(r: BoqRow, i: number) {
-  return [
-    r.wbs1,
-    r.wbs2,
-    r.wbs3,
-    r.wbs4,
-    r.description,
-    r.unit,
-    String(r.qty),
-    String(r.amount),
-    String(i),
-  ].join("||");
-}
-
-function amountGt0(r: BoqRow) {
+function amountGt0(r: SessionRow) {
   return (r.amount ?? 0) > 0;
 }
 
-export function useBoqQuery(rows: BoqRow[], opts?: Options) {
-  const defaultLimit = opts?.defaultLimit ?? DEFAULT_LIMIT;
+export function useBoqQuery(rows: SessionRow[]) {
 
   // -------------------------
   // Draft UI state
   // -------------------------
-  const [input, setInput] = useState("");
-  const [matchMode, setMatchMode] = useState<MatchMode>("all");
-  const [error, setError] = useState("");
+  const [input, setInput] = useQueryState("input");
+  const [matchMode, setMatchMode] = useQueryState("matchMode");
+  const [error, setError] = useQueryState("error");
 
   // pagination lives here (QuerySection uses it)
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useQueryState("page");
 
   // applied query (เมื่อ user กด Search)
-  const [applied, setApplied] = useState<{ q: string; mode: MatchMode } | null>(
-    null,
-  );
+  const [applied, setApplied] = useQueryState("applied");
 
   // apply removals (ลบจริงแล้ว) — เก็บเป็น ids
-  const [removedIds, setRemovedIds] = useState<Set<string>>(() => new Set());
+  const [removedIds, setRemovedIds] = useQueryState("removedIds");
 
   // staging pending remove (กด x)
-  const [pendingRemoveIds, setPendingRemoveIds] = useState<Set<string>>(
-    () => new Set(),
-  );
+  const [pendingRemoveIds, setPendingRemoveIds] = useQueryState("pendingRemoveIds");
 
   // highlight keywords (จาก draft input)
   const keywords = useMemo(
@@ -75,11 +48,9 @@ export function useBoqQuery(rows: BoqRow[], opts?: Options) {
   const workingRows: WorkingRow[] = useMemo(() => {
     const base = rows.filter(amountGt0);
 
-    // 1) initial view (ยังไม่กด Search) => Full list (อาจจำกัดจำนวนด้วย defaultLimit)
+    // 1) initial view (ยังไม่กด Search) => Full accepted list
     if (!applied || !applied.q.trim()) {
       return base
-        // .slice(0, defaultLimit)
-        .map((r, i) => ({ ...r, _id: makeRowId(r, i) }))
         .filter((r) => !removedIds.has(r._id));
     }
 
@@ -91,16 +62,15 @@ export function useBoqQuery(rows: BoqRow[], opts?: Options) {
     const searched = filterByDescription(base, regex);
 
     return searched
-      .map((r, i) => ({ ...r, _id: makeRowId(r, i) }))
       .filter((r) => !removedIds.has(r._id));
-  }, [rows, applied, defaultLimit, removedIds]);
+  }, [rows, applied, removedIds]);
 
   // -------------------------
   // Actions
   // -------------------------
   const clearPending = useCallback(() => {
     setPendingRemoveIds(new Set());
-  }, []);
+  }, [setPendingRemoveIds]);
 
   const togglePending = useCallback((id: string) => {
     setPendingRemoveIds((prev) => {
@@ -109,13 +79,13 @@ export function useBoqQuery(rows: BoqRow[], opts?: Options) {
       else next.add(id);
       return next;
     });
-  }, []);
+  }, [setPendingRemoveIds]);
 
   /**
    * Search:
    * - reset error/page/pending
    * - set applied query (derived rows จะคำนวณเอง)
-   * - ถ้า input ว่าง => ล้างผลลัพธ์ (คง behavior เดิม)
+   * - ถ้า input ว่าง => แสดงรายการที่ยังไม่ถูกตัดออกทั้งหมด
    */
   const onSearch = useCallback(() => {
     setError("");
@@ -124,7 +94,7 @@ export function useBoqQuery(rows: BoqRow[], opts?: Options) {
 
     const q = input.trim();
     if (!q) {
-      setApplied(null); // กลับไป initial view (Top N)
+      setApplied(null); // กลับไป initial view (all remaining rows)
       return;
     }
 
@@ -140,7 +110,7 @@ export function useBoqQuery(rows: BoqRow[], opts?: Options) {
       setError("Invalid search pattern");
       setApplied(null);
     }
-  }, [input, matchMode]);
+  }, [input, matchMode, setError, setPage, setPendingRemoveIds, setApplied]);
 
   /**
    * Apply pending removals:
@@ -166,7 +136,7 @@ export function useBoqQuery(rows: BoqRow[], opts?: Options) {
         return next;
       });
     },
-    [],
+    [setPage, setRemovedIds, setPendingRemoveIds],
   );
 
   return {

@@ -39,7 +39,7 @@ async function main(){
     return route.continue();
   });
   const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
-  for(const route of ['/','/boq','/report','/media']){
+  for(const route of ['/','/boq','/query','/report','/media']){
     const response=await page.goto(base+route);assert.equal(response.status(),200);
     assert.equal((await page.reload()).status(),200);
     assert(!/login|logout|stakeholder/i.test(await page.locator('header').first().innerText()));
@@ -52,7 +52,8 @@ async function main(){
       assert.equal(r.status,404,`${method} ${route}`);
     }pass(`private URL ${route} GET/POST denied with stale cookie`);
   }
-  await page.goto(base+'/boq');
+  await page.goto(base+'/query');
+  await page.getByRole('button',{name:'Use synthetic demo',exact:true}).click();
   await page.waitForFunction(()=>document.body.innerText.includes('32,500'));
   await page.getByRole('button',{name:'Search',exact:true}).click();
   await page.getByRole('button',{name:'Download CSV',exact:true}).waitFor();
@@ -78,8 +79,7 @@ async function main(){
   await page.locator('input[type=file]').setInputFiles(path.join(root,'public/data/example_progress.xlsx'));
   await page.getByText('example_progress.xlsx',{exact:true}).waitFor();pass('Report workbook upload works locally');
   if(process.env.PRIVATE_BOQ_FILE) {
-    await page.goto(base+'/boq');
-    await page.waitForFunction(()=>document.body.innerText.includes('32,500')&&!document.querySelector('input[type=file]').disabled);
+    await page.goto(base+'/query');
     await page.locator('input[type=file]').setInputFiles(process.env.PRIVATE_BOQ_FILE);
     await page.waitForFunction(()=>document.querySelector('select')?.value==='Project');
     await page.waitForFunction(()=>!document.querySelector('input[type=file]').disabled);

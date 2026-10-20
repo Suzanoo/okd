@@ -2,11 +2,13 @@
 
 Browser tools for BOQ analysis, keyword Query, progress reports and media.
 
-## R1 release candidate
+## R2 engineering candidate
 
-Current implementation, input requirements, security decisions and verification:
-[R1 runbook](docs/R1.md). Engineering candidate for Coordinator/PO review;
-deployment and native Excel acceptance have not been performed.
+R1 is accepted and merged. Independent BOQ Viewer and Query workflows are
+implemented in R2: [R2 runbook](docs/R2.md). Input requirements, modes and
+accepted security deferrals remain in the [R1 runbook](docs/R1.md).
+This is an engineering candidate; no deployment or native-device acceptance
+is implied.
 
 ```text
 pnpm install --frozen-lockfile --ignore-scripts
@@ -20,9 +22,11 @@ authentication; see the runbook and `.env.example` before using that mode.
 
 BOQ and Report uploads are read in the browser. The app does not upload project
 workbooks to a server or persist them between page loads. Public downloads are
-synthetic demos. Query remains part of BOQ. Structured Workspace is a future
-design direction; R2 and full UI redesign are not implemented.
+synthetic demos. `/boq` is the Viewer; `/query` searches the entire selected
+sheet independently of Viewer navigation. Select a workbook once and use both
+routes in the same tab. Refresh requires selecting it again; the synthetic
+BOQ demo is now an explicit choice. Structured Workspace and full UI redesign
+remain future work.
 
 Stack: Next.js 16, React 19, TypeScript, Tailwind CSS, Recharts, SheetJS and
-jsPDF. Supabase is retained for authenticated rollback only. Use Node 20.9+
-(verified Node 24.19.0) and pnpm; this candidate was verified with pnpm 11.25.0.
+jsPDF. Supabase is retained for authenticated rollback only. Verified with Node 24.19.0 and pnpm 11.25.0; pnpm 11 requires Node 22.13+.
