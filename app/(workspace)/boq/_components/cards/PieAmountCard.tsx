@@ -179,7 +179,7 @@ export default function PieAmountCard({
               stroke={t.sliceStroke}
               strokeWidth={t.sliceStrokeWidth}
               onClick={(d: unknown) => {
-                const name = String((d as any)?.name ?? "");
+                const name = String((d as { name?: unknown } | null)?.name ?? "");
                 if (!name || name === "Others") return; // Others is not a real WBS
                 onSelect(name);
               }}

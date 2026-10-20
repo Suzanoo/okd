@@ -1,7 +1,9 @@
-import { supabaseServer } from "@/lib/supabase/server";
+import { isPublicMode } from "@/config/access.config";
 import AppHeaderClient from "./AppHeaderClient";
 
 export default async function AppHeader() {
+  if (isPublicMode()) return <AppHeaderClient user={null} isAdmin={false} publicMode />;
+  const { supabaseServer } = await import("@/lib/supabase/server");
   const supabase = await supabaseServer();
   const { data } = await supabase.auth.getUser();
   const user = data.user;

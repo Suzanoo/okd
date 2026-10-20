@@ -5,7 +5,7 @@ export type ProgressRow = {
   project_finish: string
   week_start: string
   plan: number
-  actual: number
+  actual: number | null
 }
 
 export type ChartRow = {
@@ -26,22 +26,24 @@ export type KpiResult = {
 export type ActivityType = "P" | "A"
 
 export type ActivityRow = {
+  kind?: "project" | "wbs" | "activity"
   wbs: string
   activity: string
   amount: number
   type: ActivityType
-  originalProgress: number
+  originalProgress: number | null
   weeks: {
     date: string
-    value: number
+    value: number | null
   }[]
 }
 
 export type ActivityTableRow = {
+  kind?: "project" | "wbs" | "activity"
   wbs: string
   activity: string
-  amount: number
+  amount: number | null
   type: ActivityType
   total: number
-  progress: number
+  progress: number | null
 }

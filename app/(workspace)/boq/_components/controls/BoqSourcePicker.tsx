@@ -50,13 +50,13 @@ export default function BoqSourcePicker({
             <span className="font-medium text-[color:var(--color-foreground)]">
               {sourceName}
             </span>{" "}
-            {sourceType === "default" ? "(example)" : "(uploaded)"}
+            {sourceType === "default" ? "(synthetic demo)" : "(uploaded)"}
           </div>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <a href={DEFAULT_BOQ_PATH} download={defaultName} className={cardBtn}>
-            Download Example
+            Download Demo
           </a>
 
           <label className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl bg-[color:var(--color-accent)] px-4 text-xs font-medium text-white shadow-[var(--shadow-input)] transition hover:-translate-y-[1px] hover:shadow-md hover:brightness-110 active:translate-y-0 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[:disabled]:hover:translate-y-0">
@@ -76,13 +76,13 @@ export default function BoqSourcePicker({
             disabled={isLoading || sourceType === "default"}
             className={cardBtn}
           >
-            Reset to Example
+            Reset to Demo
           </button>
         </div>
       </div>
 
       <div className="mt-2 text-[11px] text-[color:var(--color-muted-foreground)]">
-        Example: <span className="font-mono">{defaultName}</span> • Upload is
+        Synthetic demo: <span className="font-mono">{defaultName}</span> • Upload is
         processed in browser only.
       </div>
     </section>

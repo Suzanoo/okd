@@ -1,3 +1,4 @@
+import { isPublicMode } from "@/config/access.config";
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -10,6 +11,7 @@ type Body = {
 };
 
 export async function POST(req: Request) {
+  if (isPublicMode()) return new NextResponse(null, { status: 404 });
   // 1) เช็คว่าผู้เรียกล็อกอิน + เป็น admin + active
   const supabase = await supabaseServer();
   const { data: auth } = await supabase.auth.getUser();

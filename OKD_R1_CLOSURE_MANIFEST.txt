@@ -1,0 +1,84 @@
+OKD_R1_CLOSURE_MANIFEST
+Baseline: Suzanoo/okd main d2168565423717976712853d33a42ef8dcf0d602
+This is a CUMULATIVE R1 + CLOSURE candidate, superseding the old R1 ZIP.
+Apply added/modified files to the accepted baseline and remove listed REMOVED
+paths. If old R1 was already applied, overlay this candidate; removed paths
+may already be absent. Do not apply the old R1 ZIP after this package.
+Stop for Coordinator review if the local baseline contains unrelated changes
+in these paths. Work did not inspect or modify the PO's local checkout.
+
+Status | Repository-relative path | SHA-256
+ADDED | .env.example | 6dc86dbd9ee59338a7b2229819ddebb3a97b4cb06dad188bda9e1d65827a2177
+MODIFIED | README.md | b0ec862a93d887e6b6e472312c5c43a04992e98541116b652e3047edfe123945
+MODIFIED | app/(protected)/admin/page.tsx | 26ee1753bea4af28d774e453ddff7c05824a7fff49223bf1ec0438691b33248e
+REMOVED | app/(protected)/boq/_components/BOQClient.tsx | -
+REMOVED | app/(protected)/boq/_components/QuerySection.tsx | -
+REMOVED | app/(protected)/boq/_components/cards/BarAmountCard.tsx | -
+REMOVED | app/(protected)/boq/_components/cards/ChartCardShell.tsx | -
+REMOVED | app/(protected)/boq/_components/cards/PieAmountCard.tsx | -
+REMOVED | app/(protected)/boq/_components/controls/BoqSourcePicker.tsx | -
+REMOVED | app/(protected)/boq/_components/controls/BuildingFilePicker.tsx | -
+REMOVED | app/(protected)/boq/_components/controls/FilterChips.tsx | -
+REMOVED | app/(protected)/boq/_components/controls/MultiSelectDropdown.tsx | -
+REMOVED | app/(protected)/boq/_components/controls/SheetPicker.tsx | -
+REMOVED | app/(protected)/boq/_components/controls/WBSSelect.tsx | -
+REMOVED | app/(protected)/boq/_components/query/QuerySummaryTable.tsx | -
+REMOVED | app/(protected)/boq/_components/query/QueryTable.tsx | -
+REMOVED | app/(protected)/boq/_components/query/useBoqQuery.ts | -
+REMOVED | app/(protected)/boq/page.tsx | -
+MODIFIED | app/(protected)/layout.tsx | 49e863fb86a28a0bca6677f269a662afb0059641c2bd1927ee91c7580d13be36
+REMOVED | app/(protected)/report/_components/KPICards.tsx | -
+REMOVED | app/(protected)/report/_components/ProgressTable.tsx | -
+REMOVED | app/(protected)/report/_components/ReportControls.tsx | -
+REMOVED | app/(protected)/report/_components/SCurveChart.tsx | -
+REMOVED | app/(protected)/report/page.tsx | -
+ADDED | app/(workspace)/boq/_components/BOQClient.tsx | ad4c74da9405a8f40bff701a4b9e410c5dbc056269cd8a8333ec8705d570e53a
+ADDED | app/(workspace)/boq/_components/QuerySection.tsx | 8b2e9e9cba8e8f347c6ca3255cd9945e8968b2eb4e294a5808dcc7e4f03e75cd
+ADDED | app/(workspace)/boq/_components/cards/BarAmountCard.tsx | 2d2d000280bb60629d850cbc9990527a1004fd96a02d1d3f8f6f9b0242ecb937
+ADDED | app/(workspace)/boq/_components/cards/ChartCardShell.tsx | b306e119519beadb75ca11a101e8ea4ce54215da1760897eff521a6e1af72d5a
+ADDED | app/(workspace)/boq/_components/cards/PieAmountCard.tsx | adc7a0193441f168e0f7492efb24706906555707d7eeb325787ae8095e50a33c
+ADDED | app/(workspace)/boq/_components/controls/BoqSourcePicker.tsx | 0a84038b6cb5db7ee604ace4901955d772d2a31ce5572377809417d75124d9b3
+ADDED | app/(workspace)/boq/_components/controls/BuildingFilePicker.tsx | c41730f55798de57bcd4ea39feaca105ad0daf93849a13175c9af7f0cbe34c85
+ADDED | app/(workspace)/boq/_components/controls/FilterChips.tsx | e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+ADDED | app/(workspace)/boq/_components/controls/MultiSelectDropdown.tsx | d025d8467731ef239c0e896da0fa41c4c2cfa3b6e8cce73fcfc82f6673f7c8d2
+ADDED | app/(workspace)/boq/_components/controls/SheetPicker.tsx | 1eee639def3d361fb7b4111c0dd2177a19a2a96f50b9bd55ef7a29680ed19d12
+ADDED | app/(workspace)/boq/_components/controls/WBSSelect.tsx | ba139b8aba7a0b8eb3f3fd64c8bd112648cb8bfa6614fbec422e30493f6f1aab
+ADDED | app/(workspace)/boq/_components/query/QuerySummaryTable.tsx | 55fd3692604b30c9e625b0dcdbc585bf06f9851ec837074b014471dcb8a9254f
+ADDED | app/(workspace)/boq/_components/query/QueryTable.tsx | 2d8ca1b487571f5a0cf42a450ac1c05aeccd753603ca13b95ac9d956d6f9bdab
+ADDED | app/(workspace)/boq/_components/query/useBoqQuery.ts | 3ff2556b2398a1b54006034668b744f5186a3f3d9757513c29e0d17f05bf7fc8
+ADDED | app/(workspace)/boq/page.tsx | 1fa67e1cc34dbb64cbfc198e0954226de4d4eb25e74f590e683642a8e6507af5
+ADDED | app/(workspace)/layout.tsx | b6073cc3796dce099d1577e1ec81f74124da80bf327468923a204c7f98c7a61d
+ADDED | app/(workspace)/report/_components/KPICards.tsx | d5ca98350ace36f9409d63d63ad6e732a23133e4b10087f119d740270275aad6
+ADDED | app/(workspace)/report/_components/ProgressTable.tsx | c2a1183e5e1475a900d1a6a0820b7a43a6624144df334b35bce5fa986a84602a
+ADDED | app/(workspace)/report/_components/ReportControls.tsx | 24028b50744949609f12363d0a30e28ceb50fab9c078e8207cbe809ff045982e
+ADDED | app/(workspace)/report/_components/SCurveChart.tsx | 710b68da2eb8bf1df19a063f4eb120793700b8c92174449f5cecce086286800b
+ADDED | app/(workspace)/report/page.tsx | d37344239dde54fdb10a3fec61dd673e18614b84bda4036c13cd79a18f3d69a1
+MODIFIED | app/_components/AppHeader.tsx | d8935d19d4114941fa9ab99ee74ccba472226373b3744cd7c23b180bb22ee206
+MODIFIED | app/_components/AppHeaderClient.tsx | 3474f756fba4e04a43bdb8cbfec4a9c4db44e49281372c306f59205226801386
+MODIFIED | app/api/admin/users/reset-password/route.ts | 67dc0766e3df47d90553089ead34dc9683f08c7211839b0830f64321ac0b9fff
+MODIFIED | app/api/admin/users/route.ts | 16ebfe3db7e8bb629b1cbd9645f64a0581ddead4c28ce6ebcca6ed39e671b4a9
+MODIFIED | app/layout.tsx | a84b75944a2253871d7d8cf94dcfb1e2fce98a5e5728fd9fb4ebccb05e0fc356
+MODIFIED | app/login/page.tsx | 72fe85929b430c01619bf2fc16df424b42ea63629a9976204260545d5a5a25cf
+MODIFIED | app/logout/route.ts | cbcc67a0a6cc85df3bbbc2b3f869551e7fd7dbf963b079e5fdcca7bb9086d82c
+MODIFIED | app/page.tsx | f4c137a9e9c1971b0492c601c047f2a71391495fa0f6f810b51fe67c16d144c1
+ADDED | config/access.config.ts | 794740db7277d4a596d0a10c531dc8123fb9b706312255349210fb9558d92ba5
+ADDED | docs/R1.md | 576b4bb939a3a5d9913bc94c9c926c7963e3c34a0698b77d8dd02ab1ae712e28
+MODIFIED | eslint.config.mjs | b5b3c0f4b1805d7b4addd3c0028c4f1e4dd0c0db566d151076307bfabcfb271d
+MODIFIED | lib/boq/query.ts | af363c7e4e19cd0a6596b49bdd35bcf3a31f67589a4b0f97562e104e4d76db32
+MODIFIED | lib/report/aggregateProgress.ts | ddf9fbc2aac9fac7fedcee597aea6ecf8ae88a1bf99f4d112e52fd1d4a503533
+MODIFIED | lib/report/calculateActivityProgress.ts | ac6575ebfa440795d668697239abead088105563d11009930538f4c803c90b56
+MODIFIED | lib/report/calculateKpi.ts | 574d2d111cfb138d7822a1e8df2995d6bd0d437a196e0d5546fa94e7ab624662
+MODIFIED | lib/report/parseReportWorkbook.ts | fa61bedf71f47f707ff7fe125ef9cc7f2218009bfa1a56510544993a52b6caac
+MODIFIED | middleware.ts | 96fc12b3cfb1019bf11eea910c91294a9b497e837c8afe0d2f89a0de1370644b
+MODIFIED | package.json | 997d7ba4abfc3eb37c7a379cc280a6bd0b70ae0671870c8549e3beea9e42e838
+MODIFIED | pnpm-lock.yaml | cfcceab5ac10ea06ad35d0d86922ff97ea50839b04fb2a0c488f65091ef761a6
+MODIFIED | public/boq/example_boq.xlsx | 942c31ccb049c4c6d0e3c5f33dacf788d2ac93fd50164b8a0c0c360e8f45f43d
+MODIFIED | public/data/example_progress.xlsx | fe9ce359569017fd6b77b403de1f1c1bb3e0ec412d35710e6e9fb3fa67ce1559
+ADDED | tests/auth-smoke.cjs | a7b1f2b5ff0714ce920684feb3f00895c99380ad5c6d779bf1d6bf0cdc60960a
+ADDED | tests/browser.cjs | ef44f98623b22c0e50dd5f811bb108350335c3b18fc3c1abcf5d08b24de622fd
+ADDED | tests/regression.cjs | 4857599469ce8f31e2d35215ae30ea7101228af63038d020e4a1b0d37743ad78
+ADDED | tests/report-contract.cjs | 0bfdcefd20760f917f53372a57e615e696d6ee71899805b750078a450bea26f8
+ADDED | tests/security.cjs | c82ec4402b54a884f2b44a734b9803d053404b86ade102f40de8eefd10a291a5
+ADDED | tests/workbook-audit.py | 5bfea97547f95c5faba629f225dae8477907529d1a09803bed71026005a65b62
+ADDED | tests/workbook-compatibility.cjs | 3321c748ff164776b0fb3443d6ba35937c15ea0e5eb53d939b3aa9326f7cfedc
+MODIFIED | types/report.ts | 7de0ea30780f9506fd707624a9798bb9d618306e783a79089532e58400289425

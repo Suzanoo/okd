@@ -1,3 +1,4 @@
+import { isPublicMode } from "@/config/access.config";
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -5,6 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 type Body = { userId: string; newPassword: string };
 
 export async function POST(req: Request) {
+  if (isPublicMode()) return new NextResponse(null, { status: 404 });
   // check caller session
   const supabase = await supabaseServer();
   const { data: auth } = await supabase.auth.getUser();

@@ -7,14 +7,15 @@ export function calculateActivityProgress(
   if (!cutoffDate) return []
 
   return rows.map((row) => {
-    const progress = row.weeks
-      .filter((week) => week.date <= cutoffDate)
-      .reduce((sum, week) => sum + week.value, 0)
+    const weeks = row.weeks.filter((week) => week.date <= cutoffDate)
+    const progress = !weeks.length || weeks.some(week => week.value === null)
+      ? null : weeks.reduce((sum, week) => sum + (week.value ?? 0), 0)
 
     const total = row.amount
-    const amount = total * (progress / 100)
+    const amount = progress === null ? null : total * (progress / 100)
 
     return {
+      kind: row.kind,
       wbs: row.wbs,
       activity: row.activity,
       type: row.type,

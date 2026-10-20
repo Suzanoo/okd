@@ -1,8 +1,9 @@
 import type { ActivityTableRow } from "@/types/report";
 
-function formatMoney(value: number) {
+function formatMoney(value: number | null) {
+  if (value === null) return "Unavailable";
   return new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(value);
 }
 
@@ -31,7 +32,7 @@ function groupActivities(data: ActivityTableRow[]): ActivityGroup[] {
   const groups = new Map<string, ActivityGroup>();
 
   data.forEach((row, index) => {
-    const key = `${row.wbs}::${row.activity}`;
+    const key = JSON.stringify([row.kind, row.wbs, row.activity]);
     const existing = groups.get(key);
 
     const group =
@@ -39,7 +40,7 @@ function groupActivities(data: ActivityTableRow[]): ActivityGroup[] {
       ({
         key: `${key}::${index}`,
         wbs: row.wbs,
-        activity: row.activity,
+        activity: `${row.kind ?? "activity"}: ${row.activity}`,
         total: row.total,
       } satisfies ActivityGroup);
 
@@ -60,9 +61,10 @@ function ProgressBar({
   value,
   tone,
 }: {
-  value: number;
+  value: number | null;
   tone: "plan" | "actual";
 }) {
+  if (value === null) return <span>Unavailable</span>;
   const width = clampProgress(value);
   const isPlan = tone === "plan";
 
@@ -103,8 +105,8 @@ function MobileProgressRow({
   tone: "plan" | "actual";
 }) {
   const isPlan = tone === "plan";
-  const amount = row?.amount ?? 0;
-  const progress = row?.progress ?? 0;
+  const amount = row?.amount ?? null;
+  const progress = row?.progress ?? null;
 
   return (
     <div className="rounded-2xl border border-border bg-surface-2/55 p-4">
@@ -130,7 +132,7 @@ function MobileProgressRow({
   );
 }
 
-export function ActivityTable({ data }: { data: ActivityTableRow[] }) {
+export function ActivityTable({ data, amountLabel }: { data: ActivityTableRow[]; amountLabel: string }) {
   const activityGroups = groupActivities(data);
 
   return (
@@ -139,8 +141,8 @@ export function ActivityTable({ data }: { data: ActivityTableRow[] }) {
         <h2 className="text-xl font-bold">Activity Progress</h2>
 
         <p className="mt-1 text-sm leading-6 text-muted-foreground">
-          Progress and amount are calculated from weekly values up to the
-          selected cutoff date.
+          Snapshot: weekly increments summed through the selected cutoff.
+          {" "}{amountLabel}. Project and WBS rows are rollups; do not add them to children.
         </p>
       </div>
 
@@ -164,7 +166,7 @@ export function ActivityTable({ data }: { data: ActivityTableRow[] }) {
 
               <div className="mt-4 flex items-center justify-between gap-4 rounded-xl bg-surface-2/65 px-3 py-2.5">
                 <span className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                  Total
+                  Total {amountLabel}
                 </span>
                 <span className="text-sm font-bold tabular-nums text-foreground">
                   {formatMoney(group.total)}
@@ -192,8 +194,8 @@ export function ActivityTable({ data }: { data: ActivityTableRow[] }) {
               <th className="px-5 py-4">WBS</th>
               <th className="px-5 py-4">Activity</th>
               <th className="px-5 py-4">Type</th>
-              <th className="px-5 py-4 text-right">Total</th>
-              <th className="px-5 py-4 text-right">Amount</th>
+              <th className="px-5 py-4 text-right">Total {amountLabel}</th>
+              <th className="px-5 py-4 text-right">Completed {amountLabel}</th>
               <th className="px-5 py-4">Progress</th>
             </tr>
           </thead>
@@ -205,6 +207,7 @@ export function ActivityTable({ data }: { data: ActivityTableRow[] }) {
               const isDuplicateActivity =
                 Boolean(previous) &&
                 previous.wbs === row.wbs &&
+                previous.kind === row.kind &&
                 previous.activity === row.activity;
 
               const isPlan = row.type === "P";
@@ -221,7 +224,7 @@ export function ActivityTable({ data }: { data: ActivityTableRow[] }) {
                   <td className="max-w-[420px] px-5 py-4">
                     {!isDuplicateActivity && (
                       <div className="line-clamp-2 font-medium">
-                        {row.activity}
+                        {row.kind ?? "activity"}: {row.activity}
                       </div>
                     )}
                   </td>
