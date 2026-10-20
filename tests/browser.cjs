@@ -71,17 +71,17 @@ async function main(){
   await page.getByText('(uploaded)',{exact:false}).waitFor();await page.getByRole('button',{name:'Search',exact:true}).click();
   await page.getByRole('button',{name:'Download CSV',exact:true}).waitFor();pass('BOQ file upload works locally');
   await page.goto(base+'/report');await page.getByText('Synthetic demo — example_progress.xlsx',{exact:true}).waitFor();
-  await page.waitForFunction(()=>document.querySelectorAll('select')[1]?.value.length>0);
-  assert.equal(await page.locator('select').nth(1).inputValue(),'2026-02-09');
+  await page.waitForFunction(()=>document.querySelector('select[aria-label="Report cutoff"]')?.value.length>0);
+  assert.equal(await page.getByRole('combobox',{name:'Report cutoff'}).inputValue(),'2026-02-09');
   assert((await page.locator('main').innerText()).includes('95'));pass('Report demo cutoff and actual 95 loaded');
-  await page.locator('select').nth(0).selectOption('monthly');assert.equal(await page.locator('select').nth(1).inputValue(),'2026-02-09');
-  await page.locator('select').nth(1).selectOption('2026-01-26');pass('Report monthly latest-week cutoff works');
+  await page.getByRole('combobox',{name:'Reporting period'}).selectOption('monthly');assert.equal(await page.getByRole('combobox',{name:'Report cutoff'}).inputValue(),'2026-02-09');
+  await page.getByRole('combobox',{name:'Report cutoff'}).selectOption('2026-01-26');pass('Report monthly latest-week cutoff works');
   await page.locator('input[type=file]').setInputFiles(path.join(root,'public/data/example_progress.xlsx'));
   await page.getByText('example_progress.xlsx',{exact:true}).waitFor();pass('Report workbook upload works locally');
   if(process.env.PRIVATE_BOQ_FILE) {
     await page.goto(base+'/query');
     await page.locator('input[type=file]').setInputFiles(process.env.PRIVATE_BOQ_FILE);
-    await page.waitForFunction(()=>document.querySelector('select')?.value==='Project');
+    await page.waitForFunction(()=>document.querySelector('select[aria-label="BOQ sheet"]')?.value==='Project');
     await page.waitForFunction(()=>!document.querySelector('input[type=file]').disabled);
     await page.getByRole('button',{name:'Search',exact:true}).click();
     await page.getByRole('button',{name:'Download CSV',exact:true}).waitFor();
@@ -102,21 +102,21 @@ async function main(){
   }
   if(process.env.PRIVATE_PROGRESS_FILE) {
     await page.goto(base+'/report');
-    await page.waitForFunction(()=>document.querySelectorAll('select')[1]?.value.length>0);
+    await page.waitForFunction(()=>document.querySelector('select[aria-label="Report cutoff"]')?.value.length>0);
     await page.locator('input[type=file]').setInputFiles(process.env.PRIVATE_PROGRESS_FILE);
     await page.getByRole('alert').filter({hasText:'formula has no saved result'}).waitFor();
-    assert.equal(await page.locator('select').nth(1).inputValue(),'2026-02-09');
+    assert.equal(await page.getByRole('combobox',{name:'Report cutoff'}).inputValue(),'2026-02-09');
     assert.match(await page.locator('main [role=alert]').innerText(),/previously loaded workbook/);
     pass('Private Progress missing caches rejected; previous data explicitly identified');
   }
   await page.goto(base+'/report');
-  await page.waitForFunction(()=>document.querySelectorAll('select')[1]?.value.length>0);
+  await page.waitForFunction(()=>document.querySelector('select[aria-label="Report cutoff"]')?.value.length>0);
   await page.locator('input[type=file]').setInputFiles({name:'invalid.xlsx',mimeType:'application/octet-stream',buffer:Buffer.from('invalid')});
   await page.locator('main [role=alert]').waitFor();
-  assert.equal(await page.locator('select').nth(1).inputValue(),'2026-02-09');pass('Malformed report leaves valid data and actionable error');
+  assert.equal(await page.getByRole('combobox',{name:'Report cutoff'}).inputValue(),'2026-02-09');pass('Malformed report leaves valid data and actionable error');
   if(process.env.REPORT_FIXTURE_OUTPUT){
     await page.locator('input[type=file]').setInputFiles(process.env.REPORT_FIXTURE_OUTPUT);
-    await page.waitForFunction(()=>document.querySelectorAll('select')[1]?.value==='2026-10-09');
+    await page.waitForFunction(()=>document.querySelector('select[aria-label="Report cutoff"]')?.value==='2026-10-09');
     assert.equal(await page.locator('main [role=alert]').count(),0);
     assert.match(await page.locator('main').innerText(),/Weight \(placeholder\)/);
     assert.match(await page.locator('main').innerText(),/project: Synthetic project/);
@@ -124,7 +124,7 @@ async function main(){
   }
   await page.setViewportSize({width:390,height:844});await page.goto(base+'/boq');
   await page.getByRole('button',{name:'Open menu',exact:true}).click();
-  await page.locator('#mobile-drawer').getByRole('link',{name:'REPORT',exact:true}).click();
+  await page.locator('#mobile-drawer').getByRole('link',{name:'Report',exact:true}).click();
   await page.waitForURL(base+'/report');assert.equal(await page.getByRole('button',{name:'Open menu',exact:true}).getAttribute('aria-expanded'),'false');pass('390px mobile drawer links public tools and closes');
   assert.deepEqual(authRequests,[]);assert.deepEqual(writes,[]);assert.deepEqual(errors,[]);
   assert(!/SUPABASE|supabaseUrl is required|Unhandled|Error:/.test(serverLog),serverLog);

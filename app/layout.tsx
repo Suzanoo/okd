@@ -23,13 +23,12 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
 (function() {
-  try {
-    var t = localStorage.getItem("okmd_theme_mode"); // <-- plain string
-    var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-    var theme = t ? t : (prefersDark ? "dark" : "light");
-    if (theme === "dark") document.documentElement.classList.add("dark");
-    else document.documentElement.classList.remove("dark");
-  } catch (e) {}
+  var preference = 'system';
+  try { var saved = localStorage.getItem('okmd_theme_mode'); if (saved === 'light' || saved === 'dark') preference = saved; } catch (e) {}
+  var dark = preference === 'dark' || (preference === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.classList.toggle('dark', dark);
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
 })();`,
           }}
         />
@@ -38,7 +37,7 @@ export default function RootLayout({
         <ThemeProvider>
           <BoqSessionProvider>
           <AppHeader />
-          {children}
+          <div id="workspace-content" tabIndex={-1}>{children}</div>
           </BoqSessionProvider>
         </ThemeProvider>
       </body>

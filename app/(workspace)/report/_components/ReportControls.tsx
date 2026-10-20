@@ -1,3 +1,4 @@
+import { SourcePanel, controlClass, buttonClass } from "@/app/_components/WorkspaceControls";
 import type { ViewMode } from "@/types/report";
 
 type Option = {
@@ -22,13 +23,8 @@ export function ReportControls({
   workbookName: string;
   onWorkbookUpload: (file: File) => void;
 }) {
-  const controlClass =
-    "h-11 rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground outline-none";
-  const buttonClass =
-    "inline-flex h-11 items-center justify-center rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground transition hover:bg-surface-2";
-
   return (
-    <div className="w-full rounded-2xl border border-border bg-surface p-2 shadow-card md:w-auto">
+    <SourcePanel label="Report workbook">
       <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center md:gap-3">
         <a href="/data/example_progress.xlsx" download className={buttonClass}>
           Download Demo
@@ -39,7 +35,7 @@ export function ReportControls({
           <input
             type="file"
             accept=".xlsx"
-            className="hidden"
+            className="sr-only"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) onWorkbookUpload(file);
@@ -48,11 +44,12 @@ export function ReportControls({
           />
         </label>
 
-        <span className="col-span-2 min-w-0 truncate px-2 py-1 text-xs text-muted-foreground md:col-span-1 md:max-w-[220px] md:px-0">
+        <span className="col-span-2 min-w-0 break-words px-2 py-1 text-xs text-muted-foreground md:col-span-1 md:max-w-[320px] md:px-0">
           {workbookName}
         </span>
 
         <select
+          aria-label="Reporting period"
           value={mode}
           onChange={(e) => setMode(e.target.value as ViewMode)}
           className={controlClass}
@@ -62,6 +59,7 @@ export function ReportControls({
         </select>
 
         <select
+          aria-label="Report cutoff"
           value={cutoffDate}
           onChange={(e) => setCutoffDate(e.target.value)}
           className={`${controlClass} min-w-0 md:min-w-[160px]`}
@@ -74,6 +72,6 @@ export function ReportControls({
           ))}
         </select>
       </div>
-    </div>
+    </SourcePanel>
   );
 }

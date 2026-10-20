@@ -110,6 +110,7 @@ export default function MultiSelectDropdown({
         disabled={disabled}
         className={`${btnBase} ${buttonClassName ?? ""}`}
         onClick={() => setOpen((o) => !o)}
+        aria-label={label + " filter"}
         aria-haspopup="menu"
         aria-expanded={open}
       >

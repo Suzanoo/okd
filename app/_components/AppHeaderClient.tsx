@@ -1,276 +1,42 @@
 "use client";
-
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { ExternalLink, Menu, X } from "lucide-react";
+import { useEffect, useRef } from "react";
 import type { User } from "@supabase/supabase-js";
-
-import { APP_LOGO, APP_NAME } from "@/config/app.config";
 import LogoutButton from "./LogoutButton";
 import ThemeToggle from "./ThemeToggle";
-
-const publicNav = [
-  { href: "/", label: "HOME" },
-  { href: "/media", label: "MEDIA" },
-  { href: "/contact", label: "CONTACT" },
-];
-
-const stakeholderNav = [
-  { href: "/boq", label: "BOQ" },
-  { href: "/query", label: "QUERY" },
-  { href: "/report", label: "REPORT" },
-  { href: "/media", label: "MEDIA" },
-];
-
-type Props = {
-  user: User | null;
-  isAdmin: boolean;
-  publicMode?: boolean;
-};
-
-export default function AppHeaderClient({ user, publicMode = false }: Props) {
-  const pathname = usePathname();
-  const [openPath, setOpenPath] = useState<string | null>(null);
-  if (openPath !== null && openPath !== pathname) setOpenPath(null);
-  const open = openPath === pathname;
-  const setOpen = (value: boolean) => setOpenPath(value ? pathname : null);
-
-  const menuBtnRef = useRef<HTMLButtonElement | null>(null);
-  const firstLinkRef = useRef<HTMLAnchorElement | null>(null);
-  const nav = publicMode
-    ? [{ href: "/", label: "HOME" }, ...stakeholderNav]
-    : user ? stakeholderNav : publicNav;
-
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpenPath(null);
-    }
-
-    window.addEventListener("keydown", onKeyDown);
-    requestAnimationFrame(() => firstLinkRef.current?.focus());
-
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open]);
-
-  const isActive = (href: string) => {
-    if (href === "/") return pathname === "/";
-    return pathname === href || pathname.startsWith(`${href}/`);
-  };
-
-  return (
-    <header className="sticky top-0 z-50 bg-black/35 pt-[env(safe-area-inset-top)] text-white backdrop-blur-xl supports-[backdrop-filter]:bg-black/25">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-6 md:py-4">
-        <Link
-          href="/"
-          aria-label="Go to Home"
-          className="inline-flex items-center gap-3"
-          onClick={() => setOpen(false)}
-        >
-          <Image
-            src={APP_LOGO}
-            alt={APP_NAME}
-            width={48}
-            height={48}
-            className="rounded-full bg-white/10 p-1 ring-1 ring-white/15 object-contain"
-            priority
-          />
-          <span className="hidden text-sm font-semibold tracking-tight sm:inline">
-            {APP_NAME}
-          </span>
-        </Link>
-
-        <nav className="hidden items-center gap-6 md:flex">
-          {nav.map((item) => {
-            const active = isActive(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={[
-                  "text-sm font-semibold transition",
-                  active ? "text-white" : "text-white/70 hover:text-white",
-                ].join(" ")}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-
-          <a
-            href="https://www.okmd.or.th/"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/15 hover:text-white"
-          >
-            OKd Website
-            <ExternalLink className="h-4 w-4" />
-          </a>
-        </nav>
-
-        <div className="flex items-center gap-2 md:gap-3">
-          {publicMode ? null : user ? (
-            <div className="hidden items-center gap-3 md:flex">
-              <span className="max-w-[180px] truncate text-xs text-white/55">
-                {user.email}
-              </span>
-              <LogoutButton />
-            </div>
-          ) : (
-            <Link
-              href="/boq"
-              className="hidden rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-sm font-medium text-white/85 transition hover:bg-white/15 hover:text-white md:inline-flex"
-            >
-              Login
-            </Link>
-          )}
-
-          <button
-            ref={menuBtnRef}
-            type="button"
-            onClick={() => setOpen(!open)}
-            className="relative inline-flex items-center justify-center rounded-full border border-white/15 bg-white/10 p-2 text-white/90 transition hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/25 md:hidden"
-            aria-label={open ? "Close menu" : "Open menu"}
-            aria-expanded={open}
-            aria-controls="mobile-drawer"
-          >
-            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-
-          <ThemeToggle />
-        </div>
+const navigation = [{href:"/",label:"Home"},{href:"/boq",label:"BOQ Viewer"},{href:"/query",label:"Query"},{href:"/report",label:"Report"},{href:"/media",label:"Media"}];
+type Props = {user: User | null; isAdmin: boolean; publicMode?: boolean};
+export default function AppHeaderClient({user,publicMode=false}: Props) {
+  const pathname=usePathname(), dialog=useRef<HTMLDialogElement>(null), trigger=useRef<HTMLButtonElement>(null);
+  const close=()=>dialog.current?.close();
+  useEffect(()=>{
+    const media=matchMedia("(min-width: 1024px)");
+    const resize=()=>{if(media.matches)dialog.current?.close();};
+    media.addEventListener("change",resize);
+    return ()=>media.removeEventListener("change",resize);
+  },[]);
+  useEffect(()=>{dialog.current?.close();},[pathname]);
+  const links=(mobile=false)=><nav aria-label={mobile?"Mobile navigation":"Main navigation"}>{navigation.map(item=><Link key={item.href} href={item.href} onClick={close} aria-current={(pathname===item.href || (item.href!=="/" && pathname.startsWith(item.href+"/")))?"page":undefined}>{item.label}</Link>)}</nav>;
+  const account=publicMode?null:user?<LogoutButton onAfterLogout={close}/>:<Link href="/login" onClick={close}>Login</Link>;
+  return <header className="workspace-header">
+    <a className="skip-link" href="#workspace-content">Skip to content</a>
+    <div className="header-inner"><Link href="/" aria-label="Go to Home" className="brand">OKd<span>.</span></Link>
+      <div className="desktop-nav">{links()}</div>
+      <div className="header-actions"><ThemeToggle/><span className="desktop-account">{account}</span>
+        <button ref={trigger} className="menu-trigger" type="button" aria-label="Open menu" aria-haspopup="dialog" aria-controls="mobile-drawer" aria-expanded="false" onClick={()=>{dialog.current?.showModal();document.body.style.overflow="hidden";trigger.current?.setAttribute("aria-expanded","true");}}>☰</button>
       </div>
-
-      <div
-        className={[
-          "md:hidden",
-          open ? "pointer-events-auto" : "pointer-events-none",
-        ].join(" ")}
-        aria-hidden={!open}
-      >
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className={[
-            "fixed inset-0 z-40 bg-black/70 backdrop-blur-[4px] transition-opacity duration-200",
-            open ? "opacity-100" : "opacity-0",
-          ].join(" ")}
-          aria-label="Close menu overlay"
-          tabIndex={open ? 0 : -1}
-        />
-
-        <aside
-          id="mobile-drawer"
-          role="dialog"
-          aria-modal="true"
-          className={[
-            "fixed right-0 top-0 z-50 flex h-dvh w-[85vw] max-w-xs flex-col pt-[env(safe-area-inset-top)]",
-            "border-l border-white/15 bg-gradient-to-b from-zinc-900/95 to-black/95 shadow-[0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl",
-            "transition-transform duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]",
-            open ? "translate-x-0" : "translate-x-full",
-          ].join(" ")}
-        >
-          <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <Image
-                src={APP_LOGO}
-                alt={APP_NAME}
-                width={38}
-                height={38}
-                className="rounded-full bg-white/10 p-1 object-contain"
-              />
-              <div className="min-w-0">
-                <div className="text-sm font-semibold">{APP_NAME} CM</div>
-                <div className="truncate text-xs text-white/50">
-                  {user ? user.email : "Public"}
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="rounded-full border border-white/15 bg-white/10 p-2 text-white/90 transition hover:bg-white/15"
-              aria-label="Close menu"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
-            <nav aria-label="Mobile navigation">
-              <ul className="flex flex-col gap-1">
-                {nav.map((item, idx) => {
-                  const active = isActive(item.href);
-                  return (
-                    <li key={item.href}>
-                      <Link
-                        href={item.href}
-                        onClick={() => setOpen(false)}
-                        ref={idx === 0 ? firstLinkRef : undefined}
-                        className={[
-                          "flex items-center justify-between rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-white/20",
-                          active
-                            ? "bg-white/14 text-white"
-                            : "bg-white/[0.03] text-white/85 hover:bg-white/10 hover:text-white",
-                        ].join(" ")}
-                      >
-                        <span>{item.label}</span>
-                        {active ? (
-                          <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                        ) : null}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-
-              <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-2">
-                <a
-                  href="https://www.okmd.or.th/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium text-white/85 transition hover:bg-white/10 hover:text-white"
-                >
-                  <span>OKMD Website</span>
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-              </div>
-            </nav>
-          </div>
-
-          <div className="shrink-0 border-t border-white/10 bg-black/25 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-2">
-              {publicMode ? null : user ? (
-                <LogoutButton
-                  variant="drawer"
-                  onAfterLogout={() => setOpen(false)}
-                />
-              ) : (
-                <Link
-                  href="/boq"
-                  onClick={() => setOpen(false)}
-                  className="flex items-center justify-center rounded-2xl px-4 py-3 text-sm font-semibold text-white/90 transition hover:bg-white/10"
-                >
-                  Stakeholder login
-                </Link>
-              )}
-            </div>
-          </div>
-        </aside>
-      </div>
-    </header>
-  );
+    </div>
+    <dialog id="mobile-drawer" ref={dialog} aria-label="Workspace navigation" onKeyDown={e=>{
+        if(e.key!=="Tab")return;
+        const items=Array.from(e.currentTarget.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),select')).filter(el=>el.getClientRects().length);
+        const first=items[0],last=items[items.length-1];
+        if(e.shiftKey && document.activeElement===first){e.preventDefault();last?.focus();}
+        else if(!e.shiftKey && document.activeElement===last){e.preventDefault();first?.focus();}
+      }} onClick={e=>{if(e.target===dialog.current)close();}}
+      onClose={()=>{document.body.style.overflow="";trigger.current?.setAttribute("aria-expanded","false");if(trigger.current?.getClientRects().length)trigger.current.focus();}}>
+      <div className="drawer-content"><div className="drawer-heading"><strong>OKd Workspace</strong><button type="button" aria-label="Close menu" onClick={close}>✕</button></div>
+      {links(true)}<div className="drawer-footer">{account}<a href="https://www.okmd.or.th/" target="_blank" rel="noreferrer">OKMD Website ↗</a></div></div>
+    </dialog>
+  </header>;
 }

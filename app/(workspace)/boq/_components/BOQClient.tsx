@@ -111,7 +111,9 @@ export default function BOQClient() {
 
         <BoqWorkspaceSource />
         {selectedSheet && !isLoading && <>
+        <div className="viewer-workspace">
         <ViewerTree rows={rows} path={viewerPath} onSelect={session.setViewerPath} />
+        <div className="viewer-results">
         <section className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4 shadow-[var(--shadow-card)]">
           <div className={`text-xs ${muted}`}>Current filter</div>
 
@@ -238,6 +240,7 @@ export default function BOQClient() {
         </section>
 
         <ViewerRows rows={rowsDesc} />
+        </div></div>
         </> }
       </div>
     </main>
