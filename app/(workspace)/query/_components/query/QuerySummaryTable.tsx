@@ -166,13 +166,6 @@ export default function QuerySummaryTable({
           ? "justify-end text-right"
           : "justify-start text-left")
       }
-      aria-sort={
-        sort.key === key
-          ? sort.order === "asc"
-            ? "ascending"
-            : "descending"
-          : "none"
-      }
       title={`Sort by ${label}`}
     >
       <span>{label}</span>
@@ -184,27 +177,28 @@ export default function QuerySummaryTable({
 
   return (
     <>
-      <div className={tableWrap}>
+      <div className={tableWrap} tabIndex={0} role="region" aria-label="Query results — scroll horizontally for all columns">
         <table className="w-full min-w-[900px] text-xs">
           <thead className={thead}>
             <tr>
-              <th className={th}>
+              <th aria-sort={sort.key === "description" ? (sort.order === "asc" ? "ascending" : "descending") : "none"} className={th}>
                 {sortableHeader("description", "Description")}
               </th>
-              <th className={th}>{sortableHeader("unit", "Unit")}</th>
-              <th className={`${th} text-right`}>
+              <th aria-sort={sort.key === "unit" ? (sort.order === "asc" ? "ascending" : "descending") : "none"} className={th}>
+                {sortableHeader("unit", "Unit")}</th>
+              <th aria-sort={sort.key === "qty" ? (sort.order === "asc" ? "ascending" : "descending") : "none"} className={`${th} text-right`}>
                 {sortableHeader("qty", "Qty", "right")}
               </th>
-              <th className={`${th} text-right`}>
+              <th aria-sort={sort.key === "material" ? (sort.order === "asc" ? "ascending" : "descending") : "none"} className={`${th} text-right`}>
                 {sortableHeader("material", "Material", "right")}
               </th>
-              <th className={`${th} text-right`}>
+              <th aria-sort={sort.key === "labor" ? (sort.order === "asc" ? "ascending" : "descending") : "none"} className={`${th} text-right`}>
                 {sortableHeader("labor", "Labor", "right")}
               </th>
-              <th className={`${th} text-right`}>
+              <th aria-sort={sort.key === "amount" ? (sort.order === "asc" ? "ascending" : "descending") : "none"} className={`${th} text-right`}>
                 {sortableHeader("amount", "Amount", "right")}
               </th>
-              <th className={`${th} text-right`}>
+              <th aria-sort={sort.key === "sourceRows" ? (sort.order === "asc" ? "ascending" : "descending") : "none"} className={`${th} text-right`}>
                 {sortableHeader("sourceRows", "Source Rows", "right")}
               </th>
             </tr>

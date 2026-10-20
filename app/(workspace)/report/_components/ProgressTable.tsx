@@ -168,7 +168,7 @@ export function ActivityTable({ data, amountLabel }: { data: ActivityTableRow[];
                 <span className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                   Total {amountLabel}
                 </span>
-                <span className="text-sm font-bold tabular-nums text-foreground">
+                <span className="shrink-0 whitespace-nowrap text-sm font-bold tabular-nums text-foreground">
                   {formatMoney(group.total)}
                 </span>
               </div>

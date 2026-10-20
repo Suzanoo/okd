@@ -110,7 +110,7 @@ export default function QueryTable({
   return (
     <>
       {/* Table */}
-      <div className={tableWrap}>
+      <div className={tableWrap} tabIndex={0} role="region" aria-label="Query results — scroll horizontally for all columns">
         <table className="w-full min-w-[1100px] text-xs">
           <thead className={thead}>
             <tr>

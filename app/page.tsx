@@ -87,7 +87,7 @@ export default function HomePage() {
   const hasMonkeyEmoji = heroTitleText !== heroTitle;
 
   return (
-    <main className="bg-background text-foreground transition-colors duration-300">
+    <main className="home-page bg-background text-foreground transition-colors duration-300">
       <section className="relative min-h-[calc(100vh-72px)] overflow-hidden">
         <Image
           src={hero.image}

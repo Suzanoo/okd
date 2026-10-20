@@ -1,0 +1,15 @@
+const fs=require('node:fs'),assert=require('node:assert/strict'),ts=require('typescript');
+require.extensions['.ts']=(m,f)=>m._compile(ts.transpileModule(fs.readFileSync(f,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText,f);
+const {resolveTheme,readPreference,useThemeStore}=require('../lib/theme/store.ts');
+let n=0;const test=(name,f)=>{f();n++;console.log('PASS',name);};
+test('System resolves both OS preferences',()=>{assert.equal(resolveTheme('system',true),'dark');assert.equal(resolveTheme('system',false),'light');});
+test('Explicit preference overrides OS',()=>{assert.equal(resolveTheme('light',true),'light');assert.equal(resolveTheme('dark',false),'dark');});
+global.localStorage={getItem:()=>null,setItem:()=>{}};
+test('No saved value defaults to System',()=>assert.equal(readPreference(),'system'));
+test('Malformed preference defaults to System',()=>{global.localStorage.getItem=()=>'{broken}';assert.equal(readPreference(),'system');});
+test('Existing plain theme preference retained',()=>{global.localStorage.getItem=()=>'dark';assert.equal(readPreference(),'dark');});
+test('Unavailable storage defaults safely',()=>{global.localStorage.getItem=()=>{throw Error('denied')};assert.equal(readPreference(),'system');});
+global.matchMedia=()=>({matches:true});
+test('Explicit choice persists to existing key',()=>{let saved;global.localStorage.setItem=(k,v)=>saved=[k,v];useThemeStore.getState().setTheme('light');assert.deepEqual(saved,['okmd_theme_mode','light']);assert.equal(useThemeStore.getState().theme,'light');});
+test('Blocked writes retain in-memory choice',()=>{global.localStorage.setItem=()=>{throw Error('denied')};useThemeStore.getState().setTheme('system');assert.equal(useThemeStore.getState().theme,'dark');});
+console.log('TOTAL',n,'theme checks passed.');

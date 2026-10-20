@@ -628,6 +628,7 @@ export default function QuerySection({ rows }: Props) {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          aria-label="Search Description"
           placeholder="ค้นหา Description (Thai / English)"
           className={inputCls}
         />
