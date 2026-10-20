@@ -30,10 +30,10 @@ export function buildDescriptionRegex(input: string, mode: MatchMode): RegExp | 
   return new RegExp(pattern, "iu");
 }
 
-export function filterByDescription(
-  rows: BoqRow[],
+export function filterByDescription<T extends BoqRow>(
+  rows: T[],
   regex: RegExp
-): BoqRow[] {
+): T[] {
   return rows.filter((r) => regex.test(r.description ?? ""));
 
 }

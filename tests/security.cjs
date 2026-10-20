@@ -40,7 +40,7 @@ async function main() {
     }
     process.env.OKD_ACCESS_MODE = 'public';
     const middleware = load('middleware.ts', { 'next/server': next }).middleware;
-    for (const pathname of ['/', '/boq', '/report', '/media', '/boq/example_boq.xlsx']) {
+    for (const pathname of ['/', '/boq', '/query', '/report', '/media', '/boq/example_boq.xlsx']) {
       await check(`public middleware ${pathname} does not import auth`, async () => assert.equal((await middleware({nextUrl:{pathname}})).status, 200));
     }
     for (const pathname of ['/admin', '/admin/child', '/api/admin/users', '/api/admin/users/reset-password', '/login', '/logout']) {

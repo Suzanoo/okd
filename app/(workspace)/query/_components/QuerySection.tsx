@@ -1,26 +1,26 @@
 "use client";
 
 import { useMemo, useState, useCallback } from "react";
-import type { BoqRow } from "@/lib/boq/types";
+import type { SessionRow } from "@/lib/boq/session";
+import { useBoqSession, useQueryState } from "@/app/_providers/BoqSessionProvider";
 import { toCSV, toDescriptionSummaryCSV } from "@/lib/boq/query";
 import { useThemeStore } from "@/lib/theme/store";
 
 import QueryTable from "./query/QueryTable";
 import { useBoqQuery } from "./query/useBoqQuery";
 
-import { DEFAULT_LIMIT, MAX_EXPORT_ROWS, PAGE_SIZE } from "@/config/boq.config";
+import { MAX_EXPORT_ROWS, PAGE_SIZE } from "@/config/boq.config";
 
 import QuerySummaryTable, {
   defaultSummarySortOrderFor,
   sortDescriptionSummaryRows,
   type DescriptionSummaryRow,
   type SummarySortKey,
-  type SummarySortState,
 } from "./query/QuerySummaryTable";
 
 type Props = {
   /** BOQ rows ทั้งหมด (source of truth) */
-  rows: BoqRow[];
+  rows: SessionRow[];
 };
 
 /**
@@ -36,7 +36,6 @@ type TableFilters = {
 };
 
 type QtyByUnit = { unit: string; qty: number };
-type ViewMode = "detail" | "summary";
 
 /** แปลง number ที่อาจเป็น null/undefined ให้ปลอดภัย */
 const safeNum = (v: number | null | undefined) =>
@@ -66,6 +65,7 @@ function sumByUnit(rows: Array<{ unit?: string | null; qty?: number | null }>) {
 }
 
 export default function QuerySection({ rows }: Props) {
+  const session = useBoqSession();
   const isDark = useThemeStore((s) => s.theme) === "dark";
 
   // =========================
@@ -88,25 +88,16 @@ export default function QuerySection({ rows }: Props) {
     togglePending,
     clearPending,
     applyPendingRemovals,
-  } = useBoqQuery(rows, { defaultLimit: DEFAULT_LIMIT });
+  } = useBoqQuery(rows);
 
   // =========================
   // 2) Table header filters
   // =========================
-  const [tf, setTf] = useState<TableFilters>({
-    wbs1: [],
-    wbs2: [],
-    wbs3: [],
-    wbs4: [],
-    unit: [],
-  });
+  const [tf, setTf] = useQueryState("filters");
 
-  const [viewMode, setViewMode] = useState<ViewMode>("detail");
-  const [summaryPage, setSummaryPage] = useState(1);
-  const [summarySort, setSummarySort] = useState<SummarySortState>({
-    key: "amount",
-    order: "desc",
-  });
+  const [viewMode, setViewMode] = useQueryState("viewMode");
+  const [summaryPage, setSummaryPage] = useQueryState("summaryPage");
+  const [summarySort, setSummarySort] = useQueryState("summarySort");
 
   /** helper: patch filters แล้ว reset page (ใช้กับ dropdown) */
   const patchFilters = useCallback(
@@ -115,7 +106,7 @@ export default function QuerySection({ rows }: Props) {
       setPage(1);
       setSummaryPage(1);
     },
-    [setPage],
+    [setPage, setTf, setSummaryPage],
   );
 
   /** reset filters + page */
@@ -123,7 +114,7 @@ export default function QuerySection({ rows }: Props) {
     setTf({ wbs1: [], wbs2: [], wbs3: [], wbs4: [], unit: [] });
     setPage(1);
     setSummaryPage(1);
-  }, [setPage]);
+  }, [setPage, setTf, setSummaryPage]);
 
   // =========================
   // 3) Derived data
@@ -220,7 +211,7 @@ export default function QuerySection({ rows }: Props) {
       return { key, order: nextOrder };
     });
     setSummaryPage(1);
-  }, []);
+  }, [setSummarySort, setSummaryPage]);
 
   const summaryTotalPages = Math.max(
     1,
@@ -256,7 +247,7 @@ export default function QuerySection({ rows }: Props) {
   const onDownloadCSV = useCallback(() => {
     const csv =
       viewMode === "detail"
-        ? toCSV(filteredWorkingRows.map(({ _id, ...rest }) => rest))
+        ? toCSV(filteredWorkingRows)
         : toDescriptionSummaryCSV(sortedDescriptionSummaryRows);
 
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -277,6 +268,7 @@ export default function QuerySection({ rows }: Props) {
 
   const onExportPDF = useCallback(async () => {
     if (exporting) return;
+    const revision = session.getState().revision;
 
     const exportRowCount =
       viewMode === "detail"
@@ -494,6 +486,8 @@ export default function QuerySection({ rows }: Props) {
         );
       }
 
+      // A delayed font/module load must not export a replaced workbook.
+      if (session.getState().revision !== revision || session.getState().loading) return;
       doc.save(
         viewMode === "detail"
           ? "boq_query_detail_result.pdf"
@@ -502,7 +496,7 @@ export default function QuerySection({ rows }: Props) {
     } finally {
       setExporting(false);
     }
-  }, [exporting, filteredWorkingRows, sortedDescriptionSummaryRows, viewMode]);
+  }, [exporting, filteredWorkingRows, sortedDescriptionSummaryRows, viewMode, session]);
 
   // =========================
   // 6) Filter options (for dropdowns)

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import AppHeader from "./_components/AppHeader"; // server wrapper
 import ThemeProvider from "./_providers/ThemeProvider";
+import BoqSessionProvider from "./_providers/BoqSessionProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -35,8 +36,10 @@ export default function RootLayout({
       </head>
       <body>
         <ThemeProvider>
+          <BoqSessionProvider>
           <AppHeader />
           {children}
+          </BoqSessionProvider>
         </ThemeProvider>
       </body>
     </html>

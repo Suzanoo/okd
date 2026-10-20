@@ -15,7 +15,7 @@ async function main(){
   let ready=false;
   for(let i=0;i<160;i++){try{if((await fetch('http://127.0.0.1:3188')).ok){ready=true;break;}}catch{}if(app.exitCode!==null)throw new Error(log);await delay(250);}
   assert(ready,log);
-  for(const url of ['/boq','/report','/admin']){
+  for(const url of ['/boq','/query','/report','/admin']){
     const r=await fetch('http://127.0.0.1:3188'+url,{redirect:'manual'});
     const body=await r.text();
     // App Router may stream the redirect in a 200 response after its shell.
@@ -28,6 +28,6 @@ async function main(){
   }
   assert.equal((await fetch('http://127.0.0.1:3188/login')).status,200);
   assert.equal(requests,0);console.log('PASS login route available; no backend request with no session');
-  console.log('TOTAL 6 authenticated HTTP smoke checks passed; no live session/RLS test.');
+  console.log('TOTAL 7 authenticated HTTP smoke checks passed; no live session/RLS test.');
 }
 main().catch(e=>{console.error(e,log);process.exitCode=1;}).finally(()=>{app?.kill();backend?.close();});
