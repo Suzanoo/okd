@@ -9,7 +9,7 @@ function calculateDelayDays(row: ProgressRow, variance: number) {
 }
 
 export function calculateKpi(row: ProgressRow | null): KpiResult | null {
-  if (!row) return null
+  if (!row || row.actual === null) return null
 
   const variance = row.actual - row.plan
   const days = calculateDelayDays(row, variance)

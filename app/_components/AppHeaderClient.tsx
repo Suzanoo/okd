@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ExternalLink, Menu, X } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 
@@ -26,24 +26,21 @@ const stakeholderNav = [
 type Props = {
   user: User | null;
   isAdmin: boolean;
+  publicMode?: boolean;
 };
 
-export default function AppHeaderClient({ user }: Props) {
+export default function AppHeaderClient({ user, publicMode = false }: Props) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const [openPath, setOpenPath] = useState<string | null>(null);
+  if (openPath !== null && openPath !== pathname) setOpenPath(null);
+  const open = openPath === pathname;
+  const setOpen = (value: boolean) => setOpenPath(value ? pathname : null);
 
   const menuBtnRef = useRef<HTMLButtonElement | null>(null);
   const firstLinkRef = useRef<HTMLAnchorElement | null>(null);
-  const prevPathRef = useRef<string | null>(null);
-
-  const nav = useMemo(() => (user ? stakeholderNav : publicNav), [user]);
-
-  useEffect(() => {
-    const prev = prevPathRef.current;
-    prevPathRef.current = pathname;
-
-    if (prev !== null && prev !== pathname && open) setOpen(false);
-  }, [pathname, open]);
+  const nav = publicMode
+    ? [{ href: "/", label: "HOME" }, ...stakeholderNav]
+    : user ? stakeholderNav : publicNav;
 
   useEffect(() => {
     if (!open) return;
@@ -58,7 +55,7 @@ export default function AppHeaderClient({ user }: Props) {
     if (!open) return;
 
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") setOpenPath(null);
     }
 
     window.addEventListener("keydown", onKeyDown);
@@ -123,7 +120,7 @@ export default function AppHeaderClient({ user }: Props) {
         </nav>
 
         <div className="flex items-center gap-2 md:gap-3">
-          {user ? (
+          {publicMode ? null : user ? (
             <div className="hidden items-center gap-3 md:flex">
               <span className="max-w-[180px] truncate text-xs text-white/55">
                 {user.email}
@@ -142,7 +139,7 @@ export default function AppHeaderClient({ user }: Props) {
           <button
             ref={menuBtnRef}
             type="button"
-            onClick={() => setOpen((v) => !v)}
+            onClick={() => setOpen(!open)}
             className="relative inline-flex items-center justify-center rounded-full border border-white/15 bg-white/10 p-2 text-white/90 transition hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/25 md:hidden"
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
@@ -255,7 +252,7 @@ export default function AppHeaderClient({ user }: Props) {
 
           <div className="shrink-0 border-t border-white/10 bg-black/25 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
             <div className="rounded-2xl border border-white/10 bg-white/5 p-2">
-              {user ? (
+              {publicMode ? null : user ? (
                 <LogoutButton
                   variant="drawer"
                   onAfterLogout={() => setOpen(false)}

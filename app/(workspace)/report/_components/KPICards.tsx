@@ -41,22 +41,22 @@ export function KPICards({ kpi }: { kpi: KpiResult | null }) {
     <section className="grid gap-3 sm:grid-cols-2 md:gap-5 lg:grid-cols-4">
       <Card
         title="Planned Progress"
-        value={`${kpi?.plan.toFixed(2) ?? "0.00"}%`}
+        value={kpi ? `${kpi.plan.toFixed(2)}%` : "Unavailable"}
         tone="blue"
       />
       <Card
         title="Actual Progress"
-        value={`${kpi?.actual.toFixed(2) ?? "0.00"}%`}
+        value={kpi ? `${kpi.actual.toFixed(2)}%` : "Unavailable"}
         tone="green"
       />
       <Card
-        title="Schedule Status"
-        value={`${kpi?.status ?? "Delay"} ${Math.abs(kpi?.variance ?? 0).toFixed(2)}%`}
+        title="Progress Variance"
+        value={kpi ? `${kpi.status} ${Math.abs(kpi.variance).toFixed(2)}%` : "Unavailable"}
         tone={isGood ? "good" : "bad"}
       />
       <Card
-        title="Time Impact"
-        value={`${kpi?.status ?? "Delay"} ${Math.abs(kpi?.days ?? 0)} Days`}
+        title="Duration proxy (not schedule delay)"
+        value={kpi ? `${Math.abs(kpi.days)} Days ${kpi.status}` : "Unavailable"}
         tone={isGood ? "good" : "bad"}
       />
     </section>

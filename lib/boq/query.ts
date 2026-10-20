@@ -43,7 +43,11 @@ type CsvCell = string | number | null | undefined;
 function rowsToCSV(header: string[], lines: CsvCell[][]): string {
   const csvBody = [header, ...lines]
     .map((row) =>
-      row.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","),
+      row.map((v) => {
+        // Keep numeric cells numeric; prevent imported text becoming Excel formulas.
+        const safe = typeof v === "string" && /^[\s\uFEFF]*[=+@-]/.test(v) ? `'${v}` : String(v ?? "");
+        return `"${safe.replace(/"/g, '""')}"`;
+      }).join(","),
     )
     .join("\r\n");
 

@@ -31,7 +31,7 @@ export function ReportControls({
     <div className="w-full rounded-2xl border border-border bg-surface p-2 shadow-card md:w-auto">
       <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center md:gap-3">
         <a href="/data/example_progress.xlsx" download className={buttonClass}>
-          Download
+          Download Demo
         </a>
 
         <label className={`${buttonClass} cursor-pointer`}>
@@ -43,6 +43,7 @@ export function ReportControls({
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) onWorkbookUpload(file);
+              e.target.value = "";
             }}
           />
         </label>

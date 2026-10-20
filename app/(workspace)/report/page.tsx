@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { ActivityRow, ProgressRow, ViewMode } from "@/types/report";
 
@@ -23,39 +23,60 @@ export default function ReportPage() {
   const [activityRows, setActivityRows] = useState<ActivityRow[]>([]);
   const [mode, setMode] = useState<ViewMode>("weekly");
   const [cutoffDate, setCutoffDate] = useState("");
-  const [workbookName, setWorkbookName] = useState("example_progress.xlsx");
+  const [workbookName, setWorkbookName] = useState("Synthetic demo — example_progress.xlsx");
+  const [error, setError] = useState("");
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [amountLabel, setAmountLabel] = useState("Amount / weight (source units)");
+  const request = useRef(0);
 
   function applyWorkbookData(
     progressRows: ProgressRow[],
     nextActivityRows: ActivityRow[],
     name: string,
+    nextWarnings: string[],
+    nextAmountLabel: string,
   ) {
     setRows(progressRows);
     setActivityRows(nextActivityRows);
     setWorkbookName(name);
+    setWarnings(nextWarnings);
+    setAmountLabel(nextAmountLabel);
+    setError("");
     setCutoffDate(progressRows.at(-1)?.week_start ?? "");
   }
 
   useEffect(() => {
+    let active = true;
+    const id = request.current;
     fetch("/data/example_progress.xlsx")
-      .then((res) => res.arrayBuffer())
+      .then((res) => { if (!res.ok) throw new Error("Could not load the demo workbook."); return res.arrayBuffer(); })
       .then((buffer) => {
+        if (!active || request.current !== id) return;
         const result = parseReportWorkbook(buffer);
         applyWorkbookData(
           result.progressRows,
           result.activityRows,
-          "example_progress.xlsx",
+          "Synthetic demo — example_progress.xlsx",
+          result.warnings,
+          result.amountLabel,
         );
       })
       .catch((error) => {
-        console.error("Failed to load example_progress.xlsx", error);
+        if (active && request.current === id) setError(String(error));
       });
+    return () => { active = false; };
   }, []);
 
   const handleWorkbookUpload = async (file: File) => {
-    const buffer = await file.arrayBuffer();
-    const result = parseReportWorkbook(buffer);
-    applyWorkbookData(result.progressRows, result.activityRows, file.name);
+    const id = ++request.current;
+    try {
+      if (file.size > 20 * 1024 * 1024) throw new Error("Report workbook exceeds the 20 MiB upload limit.");
+      const result = parseReportWorkbook(await file.arrayBuffer());
+      if (id !== request.current) return;
+      applyWorkbookData(result.progressRows, result.activityRows, file.name, result.warnings, result.amountLabel);
+    } catch (e) {
+      if (id === request.current) setError(`Could not load ${file.name}. ${e instanceof Error ? e.message : "Invalid workbook."} Showing the previously loaded workbook: ${workbookName}.`);
+    }
   };
 
   const options = useMemo(() => getCutoffOptions(rows, mode), [rows, mode]);
@@ -109,9 +130,12 @@ export default function ReportPage() {
           />
         </div>
 
+        {error && <p role="alert" className="mb-4 rounded-xl border border-danger p-4 text-danger">{error}</p>}
+        {warnings.map(message => <p key={message} className="mb-3 text-sm text-muted-foreground">{message}</p>)}
+        {cutoffRow?.actual === null && <p className="mb-3">Actual progress is unavailable at this cutoff. Plan: {cutoffRow.plan.toFixed(2)}%.</p>}
         <KPICards kpi={kpi} />
         <SCurveChart data={chartRows} />
-        <ActivityTable data={activityTableRows} />
+        <ActivityTable data={activityTableRows} amountLabel={amountLabel} />
       </div>
     </main>
   );

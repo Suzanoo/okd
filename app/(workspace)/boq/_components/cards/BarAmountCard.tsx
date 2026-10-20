@@ -147,7 +147,7 @@ export default function BarAmountCard({
                   opacity={0.92}
                   fill={usePalette ? undefined : color}
                   onClick={(d: unknown) => {
-                    const name = String((d as any)?.name ?? "");
+                    const name = String((d as { name?: unknown } | null)?.name ?? "");
                     if (name) onSelect?.(name);
                   }}
                 >

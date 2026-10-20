@@ -1,8 +1,14 @@
-import type { NextRequest } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
-// ถ้าไม่มี alias @ ให้ใช้: import { updateSession } from "./lib/supabase/middleware";
+import { NextResponse, type NextRequest } from "next/server";
+import { isPrivatePath, isPublicMode } from "@/config/access.config";
 
 export async function middleware(req: NextRequest) {
+  if (isPublicMode()) {
+    if (isPrivatePath(req.nextUrl.pathname)) {
+      return new NextResponse(null, { status: 404, headers: { "Cache-Control": "no-store" } });
+    }
+    return NextResponse.next();
+  }
+  const { updateSession } = await import("@/lib/supabase/middleware");
   return updateSession(req);
 }
 

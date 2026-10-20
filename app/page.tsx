@@ -1,3 +1,4 @@
+import { isPublicMode } from "@/config/access.config";
 import Image from "next/image";
 import Link from "next/link";
 import { SiLinktree } from "react-icons/si";
@@ -130,7 +131,7 @@ export default function HomePage() {
                 href={hero.secondaryAction.href}
                 className="rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
               >
-                {hero.secondaryAction.label}
+                {isPublicMode() ? "Open Progress" : hero.secondaryAction.label}
               </Link>
             </div>
           </div>
