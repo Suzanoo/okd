@@ -23,7 +23,8 @@ export default function ReportPage() {
   const [activityRows, setActivityRows] = useState<ActivityRow[]>([]);
   const [mode, setMode] = useState<ViewMode>("weekly");
   const [cutoffDate, setCutoffDate] = useState("");
-  const [workbookName, setWorkbookName] = useState("Synthetic demo — example_progress.xlsx");
+  const [workbookName, setWorkbookName] = useState("");
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [warnings, setWarnings] = useState<string[]>([]);
   const [amountLabel, setAmountLabel] = useState("Amount / weight (source units)");
@@ -63,19 +64,26 @@ export default function ReportPage() {
       })
       .catch((error) => {
         if (active && request.current === id) setError(String(error));
+      })
+      .finally(() => {
+        if (active && request.current === id) setLoading(false);
       });
     return () => { active = false; };
   }, []);
 
   const handleWorkbookUpload = async (file: File) => {
     const id = ++request.current;
+    setLoading(true);
+    setError("");
     try {
       if (file.size > 20 * 1024 * 1024) throw new Error("Report workbook exceeds the 20 MiB upload limit.");
       const result = parseReportWorkbook(await file.arrayBuffer());
       if (id !== request.current) return;
       applyWorkbookData(result.progressRows, result.activityRows, file.name, result.warnings, result.amountLabel);
     } catch (e) {
-      if (id === request.current) setError(`Could not load ${file.name}. ${e instanceof Error ? e.message : "Invalid workbook."} Showing the previously loaded workbook: ${workbookName}.`);
+      if (id === request.current) setError(`Could not load ${file.name}. ${e instanceof Error ? e.message : "Invalid workbook."} ${workbookName ? `Showing the previously loaded workbook: ${workbookName}.` : "No workbook is loaded."} Select a corrected workbook to retry.`);
+    } finally {
+      if (id === request.current) setLoading(false);
     }
   };
 
@@ -115,7 +123,7 @@ export default function ReportPage() {
               OKD Dashboard
             </p>
             <h1 className="mt-2 text-2xl font-bold tracking-tight md:mt-3 md:text-4xl">
-              QUE SERA, SERA. 🙈 🙉 🙊
+              Progress Report
             </h1>
           </div>
 
@@ -125,17 +133,25 @@ export default function ReportPage() {
             cutoffDate={cutoffDate}
             setCutoffDate={setCutoffDate}
             options={options}
-            workbookName={workbookName}
+            workbookName={workbookName || "No workbook loaded"}
+            disabled={loading || rows.length === 0}
             onWorkbookUpload={handleWorkbookUpload}
           />
         </div>
 
         {error && <p role="alert" className="mb-4 rounded-xl border border-danger p-4 text-danger">{error}</p>}
+        <p role="status" className="mb-4 break-words text-sm text-muted-foreground">
+          {loading ? `Loading workbook… ${workbookName ? `Previous data remains visible: ${workbookName}.` : "No report data is available yet."}` : workbookName ? `Loaded: ${workbookName}. Cutoff: ${cutoffDate || "not selected"}.` : "No report data. Upload a supported workbook, or download the synthetic sample and select it with Upload Excel."}
+        </p>
+        <p className="mb-4 text-sm text-muted-foreground">Progress variance is Actual minus Plan, in percentage points. The duration proxy scales this variance by the planned project duration; it is not confirmed schedule delay or a critical-path assessment. Uploaded files stay in this browser; leaving Report clears this report.</p>
         {warnings.map(message => <p key={message} className="mb-3 text-sm text-muted-foreground">{message}</p>)}
         {cutoffRow?.actual === null && <p className="mb-3">Actual progress is unavailable at this cutoff. Plan: {cutoffRow.plan.toFixed(2)}%.</p>}
+        {rows.length > 0 && <>
+        {kpi && <p className="mb-4 text-sm">Progress status at {cutoffDate}: Actual {kpi.variance < 0 ? "is below Plan" : kpi.variance > 0 ? "is above Plan" : "matches Plan"}. This compares progress percentages, not schedule completion dates.</p>}
         <KPICards kpi={kpi} />
         <SCurveChart data={chartRows} />
         <ActivityTable data={activityTableRows} amountLabel={amountLabel} />
+        </>}
       </div>
     </main>
   );

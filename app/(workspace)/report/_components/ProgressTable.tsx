@@ -147,6 +147,7 @@ export function ActivityTable({ data, amountLabel }: { data: ActivityTableRow[];
       </div>
 
       {/* Mobile: one activity per card */}
+      {activityGroups.length === 0 && <p className="p-5 text-muted-foreground">No activity snapshot is available for display. This is not zero progress. Review the workbook warnings and rebuild/export the Studio snapshot when required.</p>}
       <div className="space-y-4 p-4 md:hidden">
         {activityGroups.map((group) => (
           <article
@@ -187,7 +188,7 @@ export function ActivityTable({ data, amountLabel }: { data: ActivityTableRow[];
       </div>
 
       {/* Desktop/tablet: full table */}
-      <div className="hidden max-h-[520px] overflow-auto md:block">
+      <div tabIndex={0} role="region" aria-label="Activity progress — scroll horizontally for all columns" className="hidden max-h-[520px] overflow-auto md:block">
         <table className="w-full min-w-[980px] text-left text-sm">
           <thead className="sticky top-0 z-10 bg-surface-2 text-muted-foreground">
             <tr>

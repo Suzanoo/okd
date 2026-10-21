@@ -244,7 +244,12 @@ export default function QuerySection({ rows }: Props) {
   // =========================
   // 5) Export (CSV / PDF)
   // =========================
+  const [exportFeedback, setExportFeedback] = useState("");
+  const [exportError, setExportError] = useState("");
   const onDownloadCSV = useCallback(() => {
+    setExportError("");
+    setExportFeedback("");
+    try {
     const csv =
       viewMode === "detail"
         ? toCSV(filteredWorkingRows)
@@ -262,12 +267,18 @@ export default function QuerySection({ rows }: Props) {
     a.click();
 
     URL.revokeObjectURL(url);
+    setExportFeedback("CSV prepared. Download requested; check your browser downloads.");
+    } catch {
+      setExportError("CSV could not be prepared. Your query is unchanged; retry the export.");
+    }
   }, [filteredWorkingRows, sortedDescriptionSummaryRows, viewMode]);
 
   const [exporting, setExporting] = useState(false);
 
   const onExportPDF = useCallback(async () => {
     if (exporting) return;
+    setExportError("");
+    setExportFeedback("Preparing PDF…");
     const revision = session.getState().revision;
 
     const exportRowCount =
@@ -276,6 +287,8 @@ export default function QuerySection({ rows }: Props) {
         : sortedDescriptionSummaryRows.length;
 
     if (exportRowCount > MAX_EXPORT_ROWS) {
+      setExportFeedback("");
+      setExportError(`PDF limit: ${MAX_EXPORT_ROWS.toLocaleString()} rows. Filter the results and retry, or use CSV.`);
       alert(
         `ข้อมูล ${exportRowCount.toLocaleString()} แถว เยอะเกินไป\n` +
           `กรุณา filter ให้เหลือไม่เกิน ${MAX_EXPORT_ROWS.toLocaleString()} แถวก่อน export`,
@@ -487,12 +500,19 @@ export default function QuerySection({ rows }: Props) {
       }
 
       // A delayed font/module load must not export a replaced workbook.
-      if (session.getState().revision !== revision || session.getState().loading) return;
+      if (session.getState().revision !== revision || session.getState().loading) {
+        setExportFeedback("PDF cancelled because the workbook changed. Export the current results again.");
+        return;
+      }
       doc.save(
         viewMode === "detail"
           ? "boq_query_detail_result.pdf"
           : "boq_query_summary_by_description.pdf",
       );
+      setExportFeedback("PDF prepared. Download requested; check your browser downloads.");
+    } catch {
+      setExportFeedback("");
+      setExportError("PDF could not be prepared. Check your connection for font loading and retry. Your query is unchanged; CSV is also available.");
     } finally {
       setExporting(false);
     }
@@ -682,12 +702,13 @@ export default function QuerySection({ rows }: Props) {
       </div>
 
       {error ? (
-        <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+        <div role="alert" className="rounded-xl border border-danger p-3 text-sm text-danger">
           {error}
         </div>
       ) : null}
 
       {/* Result */}
+      {filteredWorkingRows.length === 0 && <p className="my-3 text-muted-foreground">No matching rows. Change the search or clear filters; excluded rows are not included in totals or exports.</p>}
       {workingRows.length > 0 ? (
         <>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -765,6 +786,8 @@ export default function QuerySection({ rows }: Props) {
             </div>
           </div>
 
+          {exportError && <p role="alert" className="my-3 text-danger">{exportError}</p>}
+          {exportFeedback && <p role="status" className="my-3 text-muted-foreground">{exportFeedback}</p>}
           {viewMode === "detail" ? (
             <QueryTable
               pageData={pageData}

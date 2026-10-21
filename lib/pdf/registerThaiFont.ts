@@ -16,8 +16,8 @@ async function loadFontsOnce() {
   if (cached) return cached;
 
   const [regBuf, boldBuf] = await Promise.all([
-    fetch("/fonts/Sarabun-Regular.ttf", { cache: "force-cache" }).then((r) => r.arrayBuffer()),
-    fetch("/fonts/Sarabun-Bold.ttf", { cache: "force-cache" }).then((r) => r.arrayBuffer()),
+    fetch("/fonts/Sarabun-Regular.ttf", { cache: "force-cache" }).then(readFont),
+    fetch("/fonts/Sarabun-Bold.ttf", { cache: "force-cache" }).then(readFont),
   ]);
 
   cached = {
@@ -25,6 +25,13 @@ async function loadFontsOnce() {
     bold: arrayBufferToBase64(boldBuf),
   };
   return cached;
+}
+
+async function readFont(response: Response) {
+  if (!response.ok) throw new Error("PDF font download failed.");
+  const buffer = await response.arrayBuffer();
+  if (!buffer.byteLength) throw new Error("PDF font is empty.");
+  return buffer;
 }
 
 /** Register Thai fonts into the given jsPDF doc (cached load). */

@@ -14,6 +14,7 @@ export function ReportControls({
   options,
   workbookName,
   onWorkbookUpload,
+  disabled,
 }: {
   mode: ViewMode;
   setMode: (mode: ViewMode) => void;
@@ -22,12 +23,13 @@ export function ReportControls({
   options: Option[];
   workbookName: string;
   onWorkbookUpload: (file: File) => void;
+  disabled: boolean;
 }) {
   return (
     <SourcePanel label="Report workbook">
       <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center md:gap-3">
         <a href="/data/example_progress.xlsx" download className={buttonClass}>
-          Download Demo
+          Download synthetic sample
         </a>
 
         <label className={`${buttonClass} cursor-pointer`}>
@@ -50,6 +52,7 @@ export function ReportControls({
 
         <select
           aria-label="Reporting period"
+          disabled={disabled}
           value={mode}
           onChange={(e) => setMode(e.target.value as ViewMode)}
           className={controlClass}
@@ -60,6 +63,7 @@ export function ReportControls({
 
         <select
           aria-label="Report cutoff"
+          disabled={disabled}
           value={cutoffDate}
           onChange={(e) => setCutoffDate(e.target.value)}
           className={`${controlClass} min-w-0 md:min-w-[160px]`}
@@ -72,6 +76,7 @@ export function ReportControls({
           ))}
         </select>
       </div>
+      <p className="mt-3 text-sm text-muted-foreground">The download is example_progress.xlsx, not your uploaded workbook. Supported sheets: progress and progress_table; formulas need saved Excel results. Maximum file size: 20 MiB.</p>
     </SourcePanel>
   );
 }

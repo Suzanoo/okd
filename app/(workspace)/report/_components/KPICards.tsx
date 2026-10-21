@@ -51,12 +51,12 @@ export function KPICards({ kpi }: { kpi: KpiResult | null }) {
       />
       <Card
         title="Progress Variance"
-        value={kpi ? `${kpi.status} ${Math.abs(kpi.variance).toFixed(2)}%` : "Unavailable"}
+        value={kpi ? `${kpi.variance > 0 ? "+" : ""}${kpi.variance.toFixed(2)} pp` : "Unavailable"}
         tone={isGood ? "good" : "bad"}
       />
       <Card
         title="Duration proxy (not schedule delay)"
-        value={kpi ? `${Math.abs(kpi.days)} Days ${kpi.status}` : "Unavailable"}
+        value={kpi ? `${kpi.days > 0 ? "+" : ""}${kpi.days} days` : "Unavailable"}
         tone={isGood ? "good" : "bad"}
       />
     </section>
