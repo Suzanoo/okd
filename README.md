@@ -2,10 +2,12 @@
 
 Browser tools for BOQ analysis, keyword Query, progress reports and media.
 
-## R4 engineering candidate
+## R3 visual closure candidate (after accepted R4)
 
-R1–R3 are accepted and merged. All-page UX and resilient operation feedback are
-implemented in R4: [R4 runbook](docs/R4.md). Shared navigation and the Structured
+R1–R4 are accepted and merged. The outstanding R3 Viewer/Query visual obligation
+is implemented against R0 Option A: [visual closure runbook](docs/R3_VISUAL_CLOSURE.md).
+R5 remains paused. All-page UX and resilient operation feedback are
+documented in the [R4 runbook](docs/R4.md). Shared navigation and the Structured
 Workspace design system remain documented in the [R3 runbook](docs/R3.md).
 Workbook session behavior remains in the [R2 runbook](docs/R2.md). Input requirements, modes and
 accepted security deferrals remain in the [R1 runbook](docs/R1.md).

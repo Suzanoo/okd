@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import { useState } from "react";
 import { highlightText } from "@/lib/boq/highlight";
 
 export type DescriptionSummaryRow = {
@@ -145,6 +146,7 @@ export default function QuerySummaryTable({
   markWrap,
   btnGhost,
 }: Props) {
+  const [fullTable,setFullTable]=useState(false);
   const sumQty = summaryRows.reduce((a, r) => a + r.qty, 0);
   const sumMaterial = summaryRows.reduce((a, r) => a + r.material, 0);
   const sumLabor = summaryRows.reduce((a, r) => a + r.labor, 0);
@@ -177,7 +179,12 @@ export default function QuerySummaryTable({
 
   return (
     <>
-      <div className={tableWrap} tabIndex={0} role="region" aria-label="Query results — scroll horizontally for all columns">
+      <button className="workspace-button mobile-cards-only" onClick={()=>setFullTable(v=>!v)}>{fullTable?"Show item cards":"Show full table"}</button>
+      {!fullTable&&<div className="boq-item-cards">
+        <div className="summary-card-sort"><span>Sort summary</span>{(["description","unit","qty","material","labor","amount","sourceRows"] as SummarySortKey[]).map(key=><span key={key}>{sortableHeader(key,key)}</span>)}</div>
+        {pageData.map(r=><article key={r._id} data-summary-card={r._id}><h3>{highlightText(r.description,keywords)}</h3><div className="item-measures"><span>{fmtNum(r.qty)} {r.unit}</span><strong>Amount {fmtInt(r.amount)}</strong></div><dl className="item-fields"><div><dt>Material</dt><dd>{fmtInt(r.material)}</dd></div><div><dt>Labor</dt><dd>{fmtInt(r.labor)}</dd></div><div><dt>Source rows</dt><dd>{r.sourceRows}</dd></div></dl></article>)}
+      </div>}
+      <div className={`${tableWrap} responsive-data-table ${fullTable?"show-full-table":""}`} tabIndex={0} role="region" aria-label="Query results — scroll horizontally for all columns">
         <table className="w-full min-w-[900px] text-xs">
           <thead className={thead}>
             <tr>

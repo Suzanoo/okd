@@ -7,6 +7,7 @@ import { toCSV, toDescriptionSummaryCSV } from "@/lib/boq/query";
 import { useThemeStore } from "@/lib/theme/store";
 
 import QueryTable from "./query/QueryTable";
+import QueryFilters from "./controls/QueryFilters";
 import { useBoqQuery } from "./query/useBoqQuery";
 
 import { MAX_EXPORT_ROWS, PAGE_SIZE } from "@/config/boq.config";
@@ -566,8 +567,6 @@ export default function QuerySection({ rows }: Props) {
   // =========================
   // 7) UI TOKENS (tailwind strings)
   // =========================
-  const card =
-    "rounded-3xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-card)]";
   const muted = "text-[color:var(--color-muted-foreground)]";
   const fg = "text-[color:var(--color-foreground)]";
 
@@ -576,9 +575,6 @@ export default function QuerySection({ rows }: Props) {
     "text-[color:var(--color-foreground)] shadow-[var(--shadow-input)] outline-none " +
     "focus:ring-2 focus:ring-[color:var(--color-accent)]/35";
 
-  const checkboxWrap = "flex items-center gap-2 text-xs";
-  const checkboxCls =
-    "h-4 w-4 rounded border border-[color:var(--color-border)] accent-[color:var(--color-accent)]";
 
   const btnPrimary =
     "inline-flex items-center justify-center gap-2 h-10 rounded-xl " +
@@ -624,170 +620,53 @@ export default function QuerySection({ rows }: Props) {
 
   const pendingRowCls = isDark ? "bg-red-500/10" : "bg-rose-50";
 
-  // =========================
-  // 8) RENDER
-  // =========================
   return (
-    <section className={`${card} space-y-4`}>
-      {/* Header */}
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <h2 className={`text-lg font-semibold ${fg}`}>BOQ Query</h2>
-          <div className={`mt-1 text-xs ${muted}`}>
-            • ค้นหา Description • WBS/Unit filter เลือกได้หลายค่า •
-            เลือกแถวตัดออก (pending) • Apply ทีเดียว
+    <div className="query-composition">
+      <div className="query-top">
+        <section className="workspace-panel query-search" aria-label="Search and filters">
+          <label htmlFor="query-keywords"><strong>Description keywords</strong></label>
+          <div className="keyword-row">
+            <input id="query-keywords" value={input} onChange={e=>setInput(e.target.value)} aria-label="Search Description" placeholder="ค้นหา Description (Thai / English)" className={inputCls} onKeyDown={e=>{if(e.key==="Enter")onSearch();}}/>
+            <button type="button" onClick={onSearch} className={btnPrimary}>Search</button>
           </div>
-        </div>
-        <div className={`text-xs ${muted}`}>
-          Page size: <span className={`${fg} font-medium`}>{PAGE_SIZE}</span>
-        </div>
+          <fieldset className="match-options"><legend className="sr-only">Word matching</legend>
+            <label><input type="radio" name="match-mode" checked={matchMode==="all"} onChange={()=>setMatchMode("all")}/>Match All</label>
+            <label><input type="radio" name="match-mode" checked={matchMode==="any"} onChange={()=>setMatchMode("any")}/>Match Any</label>
+          </fieldset>
+          <QueryFilters filters={tf} options={[wbs1Options,wbs2Options,wbs3Options,wbs4Options,unitOptions]} onChange={patchFilters} onClear={resetFilters}/>
+          <p className="workspace-note">Search scope: whole sheet · Viewer selections do not restrict results.</p>
+          {error&&<p role="alert">{error}</p>}
+        </section>
+        <section className="workspace-panel query-totals" aria-label="All matching rows">
+          <p className="workspace-eyebrow">All matching rows</p>
+          <strong data-testid="query-total">{fmtNum(sumAmount)}</strong>
+          <p>{filteredWorkingRows.length.toLocaleString()} rows · Amount as supplied</p>
+          <p data-testid="query-quantities">{qtyByUnit.length?qtyByUnit.map(x=>`${fmtNum(x.qty)} ${x.unit}`).join(" · "):"No matching quantities"}</p>
+          <p className="workspace-note">Totals cover every matching page. Excluded rows are removed only after Apply.</p>
+        </section>
       </div>
-
-      {/* Search */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          aria-label="Search Description"
-          placeholder="ค้นหา Description (Thai / English)"
-          className={inputCls}
-        />
-
-        <label className={checkboxWrap}>
-          <input
-            className={checkboxCls}
-            type="checkbox"
-            checked={matchMode === "any"}
-            onChange={(e) => setMatchMode(e.target.checked ? "any" : "all")}
-          />
-          <span className={muted}>Match any word</span>
-        </label>
-
-        <button type="button" onClick={onSearch} className={btnPrimary}>
-          Search
-        </button>
-
-        <div className="flex overflow-hidden rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)]">
-          <button
-            type="button"
-            onClick={() => {
-              setViewMode("detail");
-              setPage(1);
-            }}
-            className={
-              "px-3 py-1.5 text-xs transition " +
-              (viewMode === "detail"
-                ? "bg-[color:var(--color-accent)] text-white"
-                : "text-[color:var(--color-foreground)]")
-            }
-          >
-            Detail by WBS
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setViewMode("summary");
-              setSummaryPage(1);
-            }}
-            className={
-              "px-3 py-1.5 text-xs transition " +
-              (viewMode === "summary"
-                ? "bg-[color:var(--color-accent)] text-white"
-                : "text-[color:var(--color-foreground)]")
-            }
-          >
-            Summary by Description
-          </button>
-        </div>
-      </div>
-
-      {error ? (
-        <div role="alert" className="rounded-xl border border-danger p-3 text-sm text-danger">
-          {error}
-        </div>
-      ) : null}
-
-      {/* Result */}
-      {filteredWorkingRows.length === 0 && <p className="my-3 text-muted-foreground">No matching rows. Change the search or clear filters; excluded rows are not included in totals or exports.</p>}
-      {workingRows.length > 0 ? (
-        <>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className={`text-sm ${muted}`}>
-              {viewMode === "detail" ? (
-                <>
-                  พบ{" "}
-                  <span className={`${fg} font-medium`}>
-                    {filteredWorkingRows.length.toLocaleString()}
-                  </span>{" "}
-                  รายการ
-                </>
-              ) : (
-                <>
-                  สรุป{" "}
-                  <span className={`${fg} font-medium`}>
-                    {descriptionSummaryRows.length.toLocaleString()}
-                  </span>{" "}
-                  descriptions จาก{" "}
-                  <span className={`${fg} font-medium`}>
-                    {filteredWorkingRows.length.toLocaleString()}
-                  </span>{" "}
-                  รายการ
-                </>
-              )}
-
-              {pendingCountInFiltered > 0 ? (
-                <>
-                  {" "}
-                  • เลือกตัดออก{" "}
-                  <span className={`${fg} font-medium`}>
-                    {pendingCountInFiltered.toLocaleString()}
-                  </span>{" "}
-                  รายการ (ยังไม่ลบจริง)
-                </>
-              ) : null}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={applyPendingRemovalsInView}
-                disabled={pendingCountInFiltered === 0}
-                className={btnGhost}
-              >
-                Apply
-              </button>
-              <button
-                type="button"
-                onClick={clearPending}
-                disabled={pendingCountInFiltered === 0}
-                className={btnGhost}
-              >
-                Undo
-              </button>
-              <button type="button" onClick={resetFilters} className={btnGhost}>
-                Clear filters
-              </button>
-              <button
-                type="button"
-                onClick={onExportPDF}
-                className={btnGhost}
-                disabled={exporting}
-              >
-                {exporting ? "Exporting..." : "Export PDF"}
-              </button>
-
-              <button
-                type="button"
-                onClick={onDownloadCSV}
-                className={btnGhost}
-              >
-                Download CSV
-              </button>
-            </div>
+      <section className="workspace-panel query-results" aria-label="Query results">
+        <div className="query-results-heading">
+          <div className="result-tabs">
+            <button className={btnGhost} aria-pressed={viewMode==="detail"} onClick={()=>{setViewMode("detail");setPage(1);}}>Detail by WBS</button>
+            <button className={btnGhost} aria-pressed={viewMode==="summary"} onClick={()=>{setViewMode("summary");setSummaryPage(1);}}>Summary by Description</button>
           </div>
-
-          {exportError && <p role="alert" className="my-3 text-danger">{exportError}</p>}
-          {exportFeedback && <p role="status" className="my-3 text-muted-foreground">{exportFeedback}</p>}
+          {workingRows.length>0&&<div className="export-actions">
+            <button className={btnGhost} onClick={onDownloadCSV}>Download CSV</button>
+            <button className={btnGhost} onClick={onExportPDF} disabled={exporting}>{exporting?"Exporting...":"Export PDF"}</button>
+          </div>}
+        </div>
+        <div className="exclusion-actions">
+          <span>{pendingCountInFiltered.toLocaleString()} rows pending exclusion in current results</span>
+          <button className={btnGhost} onClick={applyPendingRemovalsInView} disabled={pendingCountInFiltered===0}>Apply</button>
+          <button className={btnGhost} onClick={clearPending} disabled={pendingCountInFiltered===0}>Undo</button>
+          <button className={btnGhost} onClick={resetFilters}>Clear filters</button>
+        </div>
+        {viewMode==="summary"&&<p className="workspace-note">{descriptionSummaryRows.length.toLocaleString()} Description + Unit groups · {filteredWorkingRows.length.toLocaleString()} source rows</p>}
+        {exportError&&<p role="alert">{exportError}</p>}
+        {exportFeedback&&<p role="status">{exportFeedback}</p>}
+        {filteredWorkingRows.length===0&&<p className={emptyBox}>No matching rows. Change the search or clear filters; excluded rows are not included in totals or exports.</p>}
+        {workingRows.length>0&&<>
           {viewMode === "detail" ? (
             <QueryTable
               pageData={pageData}
@@ -846,10 +725,9 @@ export default function QuerySection({ rows }: Props) {
               btnGhost={btnGhost}
             />
           )}
-        </>
-      ) : (
-        <div className={emptyBox}>ยังไม่มีผลลัพธ์</div>
-      )}
-    </section>
+        </>}
+        <p className="workspace-note">PDF: up to {MAX_EXPORT_ROWS.toLocaleString()} result rows · CSV exports the full result · {PAGE_SIZE} rows per page.</p>
+      </section>
+    </div>
   );
 }

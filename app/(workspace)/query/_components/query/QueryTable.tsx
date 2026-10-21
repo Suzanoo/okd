@@ -1,6 +1,8 @@
 "use client";
 
 import type React from "react";
+import { useState } from "react";
+import BoqItemCards from "@/app/_components/BoqItemCards";
 import type { BoqRow } from "@/lib/boq/types";
 import { highlightText } from "@/lib/boq/highlight";
 
@@ -107,10 +109,13 @@ export default function QueryTable({
   pendingRowCls,
   btnGhost,
 }: Props) {
+  const [fullTable,setFullTable]=useState(false);
   return (
     <>
+      <button className="workspace-button mobile-cards-only" onClick={()=>setFullTable(v=>!v)}>{fullTable?"Show item cards":"Show full table"}</button>
+      {!fullTable&&<BoqItemCards rows={pageData} keywords={keywords} pending={pendingRemoveIds} onToggle={togglePending}/>}
       {/* Table */}
-      <div className={tableWrap} tabIndex={0} role="region" aria-label="Query results — scroll horizontally for all columns">
+      <div className={`${tableWrap} responsive-data-table ${fullTable?"show-full-table":""}`} tabIndex={0} role="region" aria-label="Query results — scroll horizontally for all columns">
         <table className="w-full min-w-[1100px] text-xs">
           <thead className={thead}>
             <tr>
